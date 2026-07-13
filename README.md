@@ -27,7 +27,9 @@ build step) and the layered component model from the
   all status chips.
 - **Configuration** — tabbed CRUD for every entity, three mapping matrices, import/export and a
   Danger Zone.
-- **Export** — JSON backup/restore and a full multi-page PDF (cover + methodology + all four views).
+- **Export** — JSON backup/restore, a presentation-quality multi-page **PDF** (cover + methodology +
+  all four views), and an editable **Word (.doc)** document that renders the same content as native
+  headings and tables (no images, fully editable). Both honour the Document screen's section toggles.
 - **100% local** — all data lives in your browser's `localStorage`; nothing leaves the device.
 - **Works offline & from `file://`** — no server or build step required. Only the PDF export needs
   the network (jsPDF + html2canvas from CDN); a browser Print → Save as PDF fallback also works.

@@ -269,6 +269,140 @@ function physicalRenderable(compact = true) {
   return wrap;
 }
 
+// ------------------------------------------------------------
+// Word (.doc) export — native headings + tables (editable, no images)
+// Uses Office-HTML so Word opens/edits it; no external library, works offline.
+// ------------------------------------------------------------
+
+function exportWord(cfg) {
+  cfg = resolveCfg(cfg);
+  const s = store.getState();
+  const meta = s.meta;
+  const parts = [];
+
+  // Title block (cover)
+  if (cfg.cover) {
+    parts.push(`<h1 class="doc-title">${esc(meta.title || "Technology Strategy")}</h1>`);
+    const subs = [(cfg.coverSubtitle || meta.organisation), meta.author, today()].filter(Boolean);
+    if (subs.length) parts.push(`<p class="doc-sub">${esc(subs.join("  ·  "))}</p>`);
+  }
+  if (cfg.methodology) parts.push(methodologyDoc());
+  if (cfg.sections.users)    parts.push(usersDoc());
+  if (cfg.sections.useCases) parts.push(useCasesDoc());
+  if (cfg.sections.logical)  parts.push(logicalDoc());
+  if (cfg.sections.physical) parts.push(physicalDoc());
+
+  if (!parts.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
+
+  const html = wordWrapper(meta.title, parts.join("\n"), cfg.orientation);
+  downloadBlob(new Blob(["﻿" + html], { type: "application/msword" }), `strategy-${slug(meta.title)}-${today()}.doc`);
+}
+
+function wordWrapper(title, body, orientation) {
+  const landscape = orientation !== "portrait";
+  const size = landscape ? "841.95pt 595.35pt" : "595.35pt 841.95pt";
+  const ori = landscape ? "mso-page-orientation:landscape;" : "";
+  return `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${esc(title || "Strategy")}</title>
+<style>
+@page Section1 { size:${size}; ${ori} margin:1.4cm; }
+div.Section1 { page:Section1; }
+body { font-family:"Segoe UI",Arial,sans-serif; font-size:10.5pt; color:#111; }
+h1.doc-title { font-size:24pt; margin:0 0 4pt; }
+p.doc-sub { color:#555; font-size:11pt; margin:0 0 8pt; }
+h2 { font-size:15pt; border-bottom:1px solid #ccc; padding-bottom:2pt; margin:18pt 0 8pt; }
+h3 { font-size:12pt; margin:12pt 0 4pt; color:#1d4ed8; }
+p { margin:4pt 0; }
+table { border-collapse:collapse; width:100%; margin:4pt 0 10pt; }
+td, th { border:0.75pt solid #b0b7c3; padding:4pt 6pt; font-size:9.5pt; vertical-align:top; text-align:left; }
+th { background:#eef2f7; font-weight:bold; }
+ul { margin:2pt 0; padding-left:14pt; }
+li { margin:1pt 0; }
+.swatch { display:inline-block; width:9pt; height:9pt; border:0.5pt solid #999; margin-right:4pt; }
+.gap { color:#b45309; font-style:italic; }
+.muted { color:#666; }
+</style></head>
+<body><div class="Section1">${body}</div></body></html>`;
+}
+
+function methodologyDoc() {
+  const pairs = [
+    ["1. Users — Who we design for", "Build a shared understanding of who matters and what they care about.", "Clear user groups with articulated goals, pain points and constraints."],
+    ["2. Use Cases — What they need to do", "Describe what users are trying to accomplish and why it matters.", "Prioritised use cases linking user goals to business value."],
+    ["3. Logical Design — How the system should behave", "Define what the system must logically do to satisfy the use cases.", "A conceptual architecture of entities, processes and rules."],
+    ["4. Physical Execution — How it is implemented", "Decide how and where the system will run in practice.", "A concrete technical architecture with full traceability."],
+  ];
+  return `<h2>Methodology</h2>` + pairs.map(([t, g, o]) =>
+    `<h3>${esc(t)}</h3><p><b>Goal:</b> ${esc(g)}</p><p class="muted"><b>Outcome:</b> ${esc(o)}</p>`).join("");
+}
+
+function usersDoc() {
+  const s = store.getState();
+  if (!s.users.length) return "";
+  const rows = s.users.map((u) => {
+    const ucs = store.useCasesOfUser(u.id).map((id) => store.byId("useCases", id)).filter(Boolean).map((x) => x.name);
+    return `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.type || "")}</td><td>${esc(u.description || "")}</td>` +
+      `<td>${listCell(u.goals)}</td><td>${listCell(u.painPoints)}</td><td>${esc(ucs.join(", "))}</td></tr>`;
+  }).join("");
+  return `<h2>Users</h2><table><thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Goals</th><th>Pain points</th><th>Use cases</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function useCasesDoc() {
+  const s = store.getState();
+  if (!s.useCases.length) return "";
+  const rows = s.useCases.map((uc) => {
+    const users = store.usersOfUseCase(uc.id).map((id) => store.byId("users", id)).filter(Boolean).map((x) => x.name);
+    const comps = store.componentsOfUseCase(uc.id).map((id) => store.byId("components", id)).filter(Boolean).map((x) => x.name);
+    return `<tr><td><b>${esc(uc.name)}</b></td><td>${esc(uc.description || "")}</td><td>${esc(uc.businessValue || "")}</td>` +
+      `<td>${esc(users.join(", "))}</td><td>${esc(comps.join(", "))}</td></tr>`;
+  }).join("");
+  return `<h2>Use Cases</h2><table><thead><tr><th>Name</th><th>Description</th><th>Business value</th><th>Users</th><th>Components</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function logicalDoc() {
+  let out = `<h2>Logical Design</h2>`;
+  store.layersSorted().forEach((l) => {
+    const comps = store.componentsForLayer(l.id);
+    const note = l.orientation === "cross-cutting" ? ' <span class="muted">(cross-cutting)</span>' : "";
+    out += `<h3>${esc(l.name)}${note}</h3>`;
+    if (!comps.length) { out += `<p class="muted">No components.</p>`; return; }
+    const rows = comps.map((c) => {
+      const ucs = store.useCasesOfComponent(c.id).map((id) => store.byId("useCases", id)).filter(Boolean).map((x) => x.name);
+      return `<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.description || "")}</td><td>${esc(ucs.join(", "))}</td></tr>`;
+    }).join("");
+    out += `<table><thead><tr><th>Component</th><th>Description</th><th>Use cases</th></tr></thead><tbody>${rows}</tbody></table>`;
+  });
+  return out;
+}
+
+function physicalDoc() {
+  let out = `<h2>Physical Execution</h2>`;
+  // status legend
+  out += `<p>` + store.statusesSorted().map((st) =>
+    `<span class="swatch" style="background:${st.color}"></span>${esc(st.name)}`).join(" &nbsp; ") + `</p>`;
+  store.layersSorted().forEach((l) => {
+    const comps = store.componentsForLayer(l.id);
+    if (!comps.length) return;
+    const note = l.orientation === "cross-cutting" ? ' <span class="muted">(cross-cutting)</span>' : "";
+    out += `<h3>${esc(l.name)}${note}</h3>`;
+    const rows = comps.map((c) => {
+      const prods = store.productsOfComponent(c.id).map((id) => store.byId("products", id)).filter(Boolean)
+        .sort((a, b) => (store.statusById(a.statusId)?.order || 99) - (store.statusById(b.statusId)?.order || 99));
+      const cell = prods.length
+        ? prods.map((p) => { const st = store.statusById(p.statusId); return `<span class="swatch" style="background:${st ? st.color : "#999"}"></span>${esc(p.name)} <span class="muted">(${esc(st ? st.name : "?")}${p.vendor ? ", " + esc(p.vendor) : ""})</span>`; }).join("<br>")
+        : `<span class="gap">⚠ no products mapped</span>`;
+      return `<tr><td><b>${esc(c.name)}</b></td><td>${cell}</td></tr>`;
+    }).join("");
+    out += `<table><thead><tr><th style="width:28%">Component</th><th>Mapped products (status)</th></tr></thead><tbody>${rows}</tbody></table>`;
+  });
+  return out;
+}
+
+function listCell(arr) {
+  if (!arr || !arr.length) return "";
+  return `<ul>${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+}
+
 // html string helpers
 function iconSpan(name) { const m = iconMarkup(name, 20); return m ? `<span class="icon card-icon">${m}</span>` : ""; }
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -283,5 +417,5 @@ function chipsBlock(label, names, cls) {
 }
 
 
-SM.exportMod = { exportPDF, exportJSON, importFromFile };
+SM.exportMod = { exportPDF, exportWord, exportJSON, importFromFile };
 })();

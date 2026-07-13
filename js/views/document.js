@@ -8,7 +8,7 @@ window.SM = window.SM || {};
 const store = SM.store;
 const { h, toast } = SM.ui;
 const { go } = SM.nav;
-const { exportPDF } = SM.exportMod;
+const { exportPDF, exportWord } = SM.exportMod;
 function render(container) {
   const cfg = store.getDocConfig();
   const meta = store.getState().meta;
@@ -56,23 +56,25 @@ function render(container) {
   ));
 
   // --- Generate ---
-  const genBtn = h("button.btn.btn-primary", { text: "Generate PDF", onclick: () => onGenerate(genBtn) });
+  const genBtn = h("button.btn.btn-primary", { text: "Generate PDF", onclick: () => onGeneratePDF(genBtn) });
+  const wordBtn = h("button.btn", { text: "Download Word (.doc)", onclick: () => onGenerateWord(wordBtn) });
   container.appendChild(h("div.section-card", {},
     h("div.flex-between", {},
       h("div", {},
         h("h3.mt-0", { text: "Generate" }),
-        h("p.muted.mt-0", { text: `Output: strategy-${slugPreview(meta.title)}-${today()}.pdf` })
+        h("p.muted.mt-0", { html: `<b>PDF</b> — presentation-quality (models rendered as diagrams). <b>Word</b> — editable document with the same content as tables and text.` }),
+        h("p.muted.mt-0", { text: `Filename: strategy-${slugPreview(meta.title)}-${today()}.(pdf/doc)` })
       ),
-      genBtn
+      h("div.stack", { style: { alignItems: "flex-end" } }, genBtn, wordBtn)
     )
   ));
 
   if (!hasLibs()) {
-    container.appendChild(h("p.pdf-error", { text: "⚠ PDF libraries (jsPDF / html2canvas) failed to load — you appear to be offline. You can still use your browser's Print → Save as PDF as a fallback." }));
+    container.appendChild(h("p.pdf-error", { text: "⚠ PDF libraries (jsPDF / html2canvas) failed to load — you appear to be offline. Word export still works, or use your browser's Print → Save as PDF." }));
   }
 }
 
-async function onGenerate(btn) {
+async function onGeneratePDF(btn) {
   const original = btn.textContent;
   btn.disabled = true; btn.textContent = "Generating…";
   try {
@@ -81,6 +83,20 @@ async function onGenerate(btn) {
   } catch (err) {
     console.error(err);
     toast(err.message || "PDF export failed.", { type: "err", duration: 6000 });
+  } finally {
+    btn.disabled = false; btn.textContent = original;
+  }
+}
+
+function onGenerateWord(btn) {
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = "Generating…";
+  try {
+    exportWord();
+    toast("Word document generated");
+  } catch (err) {
+    console.error(err);
+    toast(err.message || "Word export failed.", { type: "err", duration: 6000 });
   } finally {
     btn.disabled = false; btn.textContent = original;
   }
