@@ -27,9 +27,13 @@ build step) and the layered component model from the
   all status chips.
 - **Configuration** — tabbed CRUD for every entity, three mapping matrices, import/export and a
   Danger Zone.
-- **Export** — JSON backup/restore, a presentation-quality multi-page **PDF** (cover + methodology +
-  all four views), and an editable **Word (.doc)** document that renders the same content as native
-  headings and tables (no images, fully editable). Both honour the Document screen's section toggles.
+- **Export** — from the Document screen, three formats that all honour its section/orientation toggles:
+  - **Visual (HTML)** — a self-contained `.html` that renders the real cards and layered models as
+    crisp vector HTML/CSS/SVG (looks identical to the app, only tens of KB). Open it and use the
+    browser's *Print → Save as PDF* for a small vector PDF.
+  - **Word (.doc)** — fully editable; the same content as native headings and tables (no images).
+  - **PDF** — self-contained via jsPDF/html2canvas; models are captured as images (larger file).
+  - Plus **JSON** backup/restore.
 - **100% local** — all data lives in your browser's `localStorage`; nothing leaves the device.
 - **Works offline & from `file://`** — no server or build step required. Only the PDF export needs
   the network (jsPDF + html2canvas from CDN); a browser Print → Save as PDF fallback also works.

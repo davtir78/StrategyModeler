@@ -274,6 +274,70 @@ function physicalRenderable(compact = true) {
 }
 
 // ------------------------------------------------------------
+// Visual HTML export — standalone .html that renders the real cards and
+// layered model (vector HTML/CSS/SVG, not screenshots). Tiny and crisp;
+// open it in a browser and Print -> Save as PDF for a compact vector PDF.
+// ------------------------------------------------------------
+
+const EXPORT_CSS = `
+*{box-sizing:border-box;}
+body{background:#fff;margin:0;padding:26px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.export-title{font-size:26px;margin:0 0 4px;font-weight:700;}
+.export-sub{color:#64748b;margin:0 0 6px;font-size:15px;}
+.export-h{font-size:20px;font-weight:600;margin:0 0 14px;}
+.export-section{margin-bottom:32px;}
+.export-credit{color:#64748b;font-size:12px;margin-top:24px;text-align:center;}
+.export-credit a{color:#2563eb;}
+@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box{break-inside:avoid;} }
+`;
+
+// Harvest the app's own stylesheets so the export looks identical to the UI.
+function collectCss() {
+  let css = "";
+  for (const sheet of Array.from(document.styleSheets || [])) {
+    let rules;
+    try { rules = sheet.cssRules; } catch (e) { continue; } // cross-origin / file:// blocked
+    if (!rules) continue;
+    for (const r of Array.from(rules)) css += r.cssText + "\n";
+  }
+  return css;
+}
+
+function sectionWrap(title, el) {
+  return `<div class="export-section"><h2 class="export-h">${esc(title)}</h2>${el.outerHTML}</div>`;
+}
+
+function exportHtml(cfg) {
+  cfg = resolveCfg(cfg);
+  const meta = store.getState().meta;
+  const parts = [];
+
+  if (cfg.cover) {
+    const subs = [(cfg.coverSubtitle || meta.organisation), meta.author, today()].filter(Boolean);
+    parts.push(`<div class="export-section export-cover"><div class="export-title">${esc(meta.title || "Technology Strategy")}</div>` +
+      (subs.length ? `<div class="export-sub">${esc(subs.join("  ·  "))}</div>` : "") + `</div>`);
+  }
+  if (cfg.methodology) parts.push(`<div class="export-section">${methodologyDoc()}</div>`);
+  if (cfg.sections.users)    parts.push(sectionWrap("Users", usersRenderable()));
+  if (cfg.sections.useCases) parts.push(sectionWrap("Use Cases", useCasesRenderable()));
+  if (cfg.sections.logical)  parts.push(sectionWrap("Logical Design", buildModel("logical", { intro: false })));
+  if (cfg.sections.physical) parts.push(sectionWrap("Physical Execution", physicalRenderable(false)));
+
+  if (!parts.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
+
+  parts.push(`<p class="export-credit">Component models based on reference architectures at ` +
+    `<a href="https://www.itarchitecturepatterns.net/reference-architectures">itarchitecturepatterns.net</a>.</p>`);
+
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<title>${esc(meta.title || "Strategy")}</title>` +
+    `<style>${collectCss()}\n${EXPORT_CSS}</style></head>` +
+    `<body>${parts.join("\n")}</body></html>`;
+
+  downloadBlob(new Blob([html], { type: "text/html" }), `strategy-${slug(meta.title)}-${today()}.html`);
+}
+
+// ------------------------------------------------------------
 // Word (.doc) export — native headings + tables (editable, no images)
 // Uses Office-HTML so Word opens/edits it; no external library, works offline.
 // ------------------------------------------------------------
@@ -421,5 +485,5 @@ function chipsBlock(label, names, cls) {
 }
 
 
-SM.exportMod = { exportPDF, exportWord, exportJSON, importFromFile };
+SM.exportMod = { exportPDF, exportWord, exportHtml, exportJSON, importFromFile };
 })();
