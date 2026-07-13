@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strategy Modeler</title>
+  <meta name="description" content="Author and present a technology strategy: Users → Use Cases → Logical Design → Physical Execution." />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/print.css" media="print" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%97%86%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- Toast / modal / popover host -->
+  <div id="overlay-root"></div>
+
+  <!-- Off-screen render host for PDF capture -->
+  <div id="pdf-render-host" aria-hidden="true"></div>
+
+  <!-- PDF export libraries (CDN, only needed for the Export PDF button) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Example templates (plain .js so they work from file://) -->
+  <script src="templates/data-platform.js"></script>
+  <script src="templates/integration.js"></script>
+
+  <!-- Application — classic scripts (no ES modules) so it works from file://.
+       Loaded in dependency order; each registers into the global window.SM namespace. -->
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/forms.js"></script>
+  <script src="js/views/model.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/views/home.js"></script>
+  <script src="js/views/users.js"></script>
+  <script src="js/views/usecases.js"></script>
+  <script src="js/views/logical.js"></script>
+  <script src="js/views/physical.js"></script>
+  <script src="js/views/config.js"></script>
+  <script src="js/views/document.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

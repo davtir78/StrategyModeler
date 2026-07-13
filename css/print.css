@@ -1,0 +1,44 @@
+/* ============================================================
+   Strategy Modeler — print stylesheet (browser print-to-PDF fallback)
+   ============================================================ */
+
+@page { size: A4 landscape; margin: 12mm; }
+
+@media print {
+  .app-nav,
+  .brand,
+  .app-header,
+  .model-toolbar .btn,
+  .toggle-inline,
+  .card-actions,
+  .btn,
+  .btn-icon,
+  #overlay-root,
+  .side-panel,
+  .overlay-backdrop {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: block;
+    height: auto;
+  }
+
+  .app-main {
+    grid-area: unset;
+    overflow: visible;
+    padding: 0;
+    height: auto;
+  }
+
+  body { background: #fff; }
+
+  /* Force each model view onto its own page when printing the full doc */
+  .print-page { page-break-before: always; }
+  .print-page:first-child { page-break-before: avoid; }
+
+  .layer-band, .card, .component-box { break-inside: avoid; }
+
+  /* Ensure background colors (bands, chips) print */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

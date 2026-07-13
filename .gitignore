@@ -1,0 +1,13 @@
+# Firebase
+.firebase/
+firebase-debug.log
+*-debug.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node (only if tooling is ever added)
+node_modules/
