@@ -381,14 +381,13 @@ p.doc-sub { color:#555; font-size:11pt; margin:0 0 8pt; }
 h2 { font-size:15pt; border-bottom:1px solid #ccc; padding-bottom:2pt; margin:18pt 0 8pt; }
 h3 { font-size:12pt; margin:12pt 0 4pt; color:#1d4ed8; }
 p { margin:4pt 0; }
-table { border-collapse:collapse; width:100%; margin:4pt 0 10pt; }
-td, th { border:0.75pt solid #b0b7c3; padding:4pt 6pt; font-size:9.5pt; vertical-align:top; text-align:left; }
-th { background:#eef2f7; font-weight:bold; }
-ul { margin:2pt 0; padding-left:14pt; }
-li { margin:1pt 0; }
-.swatch { display:inline-block; width:9pt; height:9pt; border:0.5pt solid #999; margin-right:4pt; }
+table { border-collapse:collapse; width:100%; margin:4pt 0 8pt; }
+td { padding:0; font-size:9.5pt; vertical-align:top; text-align:left; }
+ul { margin:2pt 0; padding-left:13pt; }
+li { margin:1pt 0; font-size:9pt; }
 .gap { color:#b45309; font-style:italic; }
 .muted { color:#666; }
+.fieldlabel { font-size:7.5pt; color:#64748b; letter-spacing:0.5pt; margin:4pt 0 1pt; }
 </style></head>
 <body><div class="Section1">${body}</div></body></html>`;
 }
@@ -404,71 +403,120 @@ function methodologyDoc() {
     `<h3>${esc(t)}</h3><p><b>Goal:</b> ${esc(g)}</p><p class="muted"><b>Outcome:</b> ${esc(o)}</p>`).join("");
 }
 
+// ---- Word visual builders: cards + coloured layer bands (Word-friendly tables) ----
+
+const BADGE_STYLE = {
+  primary:   "background:#dbeafe;color:#1d4ed8;",
+  secondary: "background:#e2e8f0;color:#334155;",
+  external:  "background:#ede9fe;color:#6d28d9;",
+};
+
+function badgeSpan(type) {
+  const st = BADGE_STYLE[type] || BADGE_STYLE.secondary;
+  return `<span style="${st}font-size:7.5pt;padding:1pt 4pt;font-weight:bold;">${esc((type || "").toUpperCase())}</span>`;
+}
+function chip(name, bg, color) {
+  return `<span style="background:${bg};color:${color};font-size:8pt;padding:1pt 4pt;">${esc(name)}</span>`;
+}
+function chipsLine(names, bg, color) {
+  return names.length ? names.map((n) => chip(n, bg, color)).join(" ") : "";
+}
+function miniList(label, arr) {
+  if (!arr || !arr.length) return "";
+  return `<p class="fieldlabel">${label.toUpperCase()}</p><ul>${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+}
+// Lay cells out in a grid table of `cols` columns.
+function cardGrid(cells, cols) {
+  let html = `<table>`;
+  for (let i = 0; i < cells.length; i += cols) {
+    html += "<tr>";
+    for (let j = 0; j < cols; j++) html += cells[i + j] !== undefined ? cells[i + j] : `<td style="width:${Math.floor(100 / cols)}%"></td>`;
+    html += "</tr>";
+  }
+  return html + `</table>`;
+}
+function groupRows(comps) {
+  const rows = {}, noRow = [];
+  comps.forEach((c) => { if (c.row == null) noRow.push(c); else (rows[c.row] = rows[c.row] || []).push(c); });
+  const out = Object.keys(rows).map(Number).sort((a, b) => a - b).map((k) => rows[k]);
+  if (noRow.length) out.push(noRow);
+  return out;
+}
+function prodsOf(cp) {
+  return store.productsOfComponent(cp.id).map((id) => store.byId("products", id)).filter(Boolean)
+    .sort((a, b) => (store.statusById(a.statusId)?.order || 99) - (store.statusById(b.statusId)?.order || 99));
+}
+
 function usersDoc() {
   const s = store.getState();
   if (!s.users.length) return "";
-  const rows = s.users.map((u) => {
+  const cells = s.users.map((u) => {
     const ucs = store.useCasesOfUser(u.id).map((id) => store.byId("useCases", id)).filter(Boolean).map((x) => x.name);
-    return `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.type || "")}</td><td>${esc(u.description || "")}</td>` +
-      `<td>${listCell(u.goals)}</td><td>${listCell(u.painPoints)}</td><td>${esc(ucs.join(", "))}</td></tr>`;
-  }).join("");
-  return `<h2>Users</h2><table><thead><tr><th>Name</th><th>Type</th><th>Description</th><th>Goals</th><th>Pain points</th><th>Use cases</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<td style="width:50%;border:0.75pt solid #e2e8f0;padding:8pt;vertical-align:top;background:#fff;">` +
+      `<p style="margin:0;font-size:12pt;"><b>${esc(u.name)}</b> &nbsp;${badgeSpan(u.type)}</p>` +
+      (u.description ? `<p style="margin:3pt 0;color:#475569;font-size:9pt;">${esc(u.description)}</p>` : "") +
+      miniList("Goals", u.goals) + miniList("Pain points", u.painPoints) +
+      (ucs.length ? `<p class="fieldlabel">USE CASES</p><p style="margin:1pt 0;">${chipsLine(ucs, "#f0fdfa", "#0f766e")}</p>` : "") +
+      `</td>`;
+  });
+  return `<h2>Users</h2>${cardGrid(cells, 2)}`;
 }
 
 function useCasesDoc() {
   const s = store.getState();
   if (!s.useCases.length) return "";
-  const rows = s.useCases.map((uc) => {
+  const cells = s.useCases.map((uc) => {
     const users = store.usersOfUseCase(uc.id).map((id) => store.byId("users", id)).filter(Boolean).map((x) => x.name);
     const comps = store.componentsOfUseCase(uc.id).map((id) => store.byId("components", id)).filter(Boolean).map((x) => x.name);
-    return `<tr><td><b>${esc(uc.name)}</b></td><td>${esc(uc.description || "")}</td><td>${esc(uc.businessValue || "")}</td>` +
-      `<td>${esc(users.join(", "))}</td><td>${esc(comps.join(", "))}</td></tr>`;
-  }).join("");
-  return `<h2>Use Cases</h2><table><thead><tr><th>Name</th><th>Description</th><th>Business value</th><th>Users</th><th>Components</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<td style="width:50%;border:0.75pt solid #e2e8f0;padding:8pt;vertical-align:top;background:#fff;">` +
+      `<p style="margin:0;font-size:12pt;"><b>${esc(uc.name)}</b></p>` +
+      (uc.description ? `<p style="margin:3pt 0;color:#475569;font-size:9pt;">${esc(uc.description)}</p>` : "") +
+      (uc.businessValue ? `<p style="margin:2pt 0;color:#64748b;font-size:9pt;font-style:italic;">Business value: ${esc(uc.businessValue)}</p>` : "") +
+      (users.length ? `<p class="fieldlabel">USERS</p><p style="margin:1pt 0;">${chipsLine(users, "#eff6ff", "#1d4ed8")}</p>` : "") +
+      (comps.length ? `<p class="fieldlabel">COMPONENTS</p><p style="margin:1pt 0;">${chipsLine(comps, "#faf5ff", "#7e22ce")}</p>` : "") +
+      `</td>`;
+  });
+  return `<h2>Use Cases</h2>${cardGrid(cells, 2)}`;
+}
+
+// A coloured layer band with its component boxes (used by both logical & physical).
+function bandDoc(layer, mode) {
+  const c = (store.LAYER_COLORS || {})[layer.color] || (store.LAYER_COLORS || {}).slate || { bg: "#f8fafc", border: "#cbd5e1", header: "#334155" };
+  const note = layer.orientation === "cross-cutting" ? ` <span style="color:#64748b;font-size:8pt;font-style:italic;">· spans all layers</span>` : "";
+  let inner = "";
+  const comps = store.componentsForLayer(layer.id);
+  if (!comps.length) {
+    inner = `<p class="muted" style="margin:2pt 0;">No components.</p>`;
+  } else {
+    groupRows(comps).forEach((rowComps) => {
+      const w = Math.floor(100 / rowComps.length);
+      inner += `<table style="margin:0 0 4pt;"><tr>`;
+      rowComps.forEach((cp) => {
+        let box = `<b style="font-size:9pt;">${esc(cp.name)}</b>`;
+        if (mode === "physical") {
+          const prods = prodsOf(cp);
+          box += prods.length
+            ? `<br>` + prods.map((p) => { const st = store.statusById(p.statusId); return `<span style="font-size:8pt;"><span style="color:${st ? st.color : "#999"};">■</span> ${esc(p.name)}</span>`; }).join("<br>")
+            : `<br><span class="gap" style="font-size:8pt;">⚠ no products</span>`;
+        }
+        inner += `<td style="width:${w}%;border:0.75pt solid ${c.header};padding:5pt;text-align:center;vertical-align:top;background:#fff;">${box}</td>`;
+      });
+      inner += `</tr></table>`;
+    });
+  }
+  return `<table style="margin:6pt 0;"><tr><td style="background:${c.bg};border:0.75pt solid ${c.border};padding:5pt 8pt;">` +
+    `<b style="color:${c.header};font-size:9pt;letter-spacing:0.6pt;">${esc(layer.name.toUpperCase())}</b>${note}</td></tr>` +
+    `<tr><td style="background:${c.bg};border:0.75pt solid ${c.border};border-top:none;padding:6pt;">${inner}</td></tr></table>`;
 }
 
 function logicalDoc() {
-  let out = `<h2>Logical Design</h2>`;
-  store.layersSorted().forEach((l) => {
-    const comps = store.componentsForLayer(l.id);
-    const note = l.orientation === "cross-cutting" ? ' <span class="muted">(cross-cutting)</span>' : "";
-    out += `<h3>${esc(l.name)}${note}</h3>`;
-    if (!comps.length) { out += `<p class="muted">No components.</p>`; return; }
-    const rows = comps.map((c) => {
-      const ucs = store.useCasesOfComponent(c.id).map((id) => store.byId("useCases", id)).filter(Boolean).map((x) => x.name);
-      return `<tr><td><b>${esc(c.name)}</b></td><td>${esc(c.description || "")}</td><td>${esc(ucs.join(", "))}</td></tr>`;
-    }).join("");
-    out += `<table><thead><tr><th>Component</th><th>Description</th><th>Use cases</th></tr></thead><tbody>${rows}</tbody></table>`;
-  });
-  return out;
+  return `<h2>Logical Design</h2>` + store.layersSorted().map((l) => bandDoc(l, "logical")).join("");
 }
 
 function physicalDoc() {
-  let out = `<h2>Physical Execution</h2>`;
-  // status legend
-  out += `<p>` + store.statusesSorted().map((st) =>
-    `<span class="swatch" style="background:${st.color}"></span>${esc(st.name)}`).join(" &nbsp; ") + `</p>`;
-  store.layersSorted().forEach((l) => {
-    const comps = store.componentsForLayer(l.id);
-    if (!comps.length) return;
-    const note = l.orientation === "cross-cutting" ? ' <span class="muted">(cross-cutting)</span>' : "";
-    out += `<h3>${esc(l.name)}${note}</h3>`;
-    const rows = comps.map((c) => {
-      const prods = store.productsOfComponent(c.id).map((id) => store.byId("products", id)).filter(Boolean)
-        .sort((a, b) => (store.statusById(a.statusId)?.order || 99) - (store.statusById(b.statusId)?.order || 99));
-      const cell = prods.length
-        ? prods.map((p) => { const st = store.statusById(p.statusId); return `<span class="swatch" style="background:${st ? st.color : "#999"}"></span>${esc(p.name)} <span class="muted">(${esc(st ? st.name : "?")}${p.vendor ? ", " + esc(p.vendor) : ""})</span>`; }).join("<br>")
-        : `<span class="gap">⚠ no products mapped</span>`;
-      return `<tr><td><b>${esc(c.name)}</b></td><td>${cell}</td></tr>`;
-    }).join("");
-    out += `<table><thead><tr><th style="width:28%">Component</th><th>Mapped products (status)</th></tr></thead><tbody>${rows}</tbody></table>`;
-  });
-  return out;
-}
-
-function listCell(arr) {
-  if (!arr || !arr.length) return "";
-  return `<ul>${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const legend = `<p>` + store.statusesSorted().map((st) =>
+    `<span style="color:${st.color};">■</span> <span style="font-size:9pt;">${esc(st.name)}</span>`).join(" &nbsp; ") + `</p>`;
+  return `<h2>Physical Execution</h2>${legend}` + store.layersSorted().map((l) => bandDoc(l, "physical")).join("");
 }
 
 // html string helpers

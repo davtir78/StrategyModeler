@@ -65,7 +65,7 @@ function render(container) {
         h("h3.mt-0", { text: "Generate" }),
         h("ul.muted", { style: { margin: "4px 0", paddingLeft: "18px", fontSize: "13.5px" } },
           h("li", { html: "<b>Visual (HTML)</b> — crisp cards & models exactly like the app, tiny file. Open it and use your browser's <b>Print → Save as PDF</b> for a small vector PDF." }),
-          h("li", { html: "<b>Word (.doc)</b> — fully editable; same content as tables and text." }),
+          h("li", { html: "<b>Word (.doc)</b> — the same visual layout (cards, coloured layer bands, component boxes, status chips) rebuilt with Word-native tables, so it stays <b>fully editable</b>." }),
           h("li", { html: "<b>PDF</b> — self-contained, but models are captured as images (larger file)." })
         )
       ),

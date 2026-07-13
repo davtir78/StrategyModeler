@@ -31,7 +31,10 @@ build step) and the layered component model from the
   - **Visual (HTML)** — a self-contained `.html` that renders the real cards and layered models as
     crisp vector HTML/CSS/SVG (looks identical to the app, only tens of KB). Open it and use the
     browser's *Print → Save as PDF* for a small vector PDF.
-  - **Word (.doc)** — fully editable; the same content as native headings and tables (no images).
+  - **Word (.doc)** — the same *visual* layout (cards, coloured layer bands, component boxes, status
+    chips) rebuilt with Word-native tables, so it looks like the app **and stays fully editable**.
+    (Word's HTML engine can't render flexbox/grid or inline SVG, so the visuals are reconstructed
+    with tables and cell colours rather than copied from the HTML export.)
   - **PDF** — self-contained via jsPDF/html2canvas; models are captured as images (larger file).
   - Plus **JSON** backup/restore.
 - **100% local** — all data lives in your browser's `localStorage`; nothing leaves the device.
