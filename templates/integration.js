@@ -8,6 +8,8 @@ window.STRATEGY_TEMPLATES.push({
   id: "integration",
   name: "Integration Strategy (example)",
   description: "Enterprise integration: API management, iPaaS/ESB, event streaming, B2B and connectivity across 10 layers.",
+  source: "Inspired by IT Architecture Patterns",
+  sourceUrl: "https://www.itarchitecturepatterns.net/reference-architectures",
   data: {
     schemaVersion: 1,
     meta: {

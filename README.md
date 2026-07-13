@@ -117,6 +117,15 @@ firebase use --add                # pick your StrategyModeler project if the ali
 firebase deploy --only hosting
 ```
 
+## Credits
+
+The layered component models in the example strategies are based on the reference architectures
+published at **[IT Architecture Patterns](https://www.itarchitecturepatterns.net/reference-architectures)**.
+The bundled *Data Platform Strategy* example follows their
+[Data Platform Reference Architecture](https://www.itarchitecturepatterns.net/reference-architectures/data-platform-reference-architecture);
+the *Integration Strategy* example is authored in the same modelling style. Well worth a visit for
+more reference architectures.
+
 ## License
 
 Internal example project.

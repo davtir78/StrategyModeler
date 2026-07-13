@@ -228,7 +228,12 @@ function templateGallery(templates, onLoad) {
     h("div.template-card", {},
       h("div.tc-body", {},
         h("b", { text: t.name }),
-        t.description ? h("div.muted.tc-desc", { text: t.description }) : null
+        t.description ? h("div.muted.tc-desc", { text: t.description }) : null,
+        t.sourceUrl ? h("a.tc-source", {
+          href: t.sourceUrl, target: "_blank", rel: "noopener noreferrer",
+          text: (t.source || "Reference architecture") + " ↗",
+          onclick: (e) => e.stopPropagation(),
+        }) : null
       ),
       h("button.btn.btn-sm", { text: "Load", onclick: () => onLoad(t.id) })
     )

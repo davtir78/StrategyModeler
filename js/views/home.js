@@ -42,6 +42,12 @@ function render(container) {
   if (empty) container.appendChild(gettingStarted());
 
   container.appendChild(methodology());
+
+  container.appendChild(h("p.home-credit", {},
+    "The layered component models in the example strategies are based on the reference architectures at ",
+    h("a", { href: "https://www.itarchitecturepatterns.net/reference-architectures", target: "_blank", rel: "noopener noreferrer", text: "itarchitecturepatterns.net" }),
+    "."
+  ));
 }
 
 function gettingStarted() {

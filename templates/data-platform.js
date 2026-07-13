@@ -8,6 +8,8 @@ window.STRATEGY_TEMPLATES.push({
   id: "data-platform",
   name: "Data Platform Strategy (example)",
   description: "A worked example: modern cloud data platform strategy with 10 layers, ~45 components and mapped products.",
+  source: "Data Platform Reference Architecture",
+  sourceUrl: "https://www.itarchitecturepatterns.net/reference-architectures/data-platform-reference-architecture",
   data: {
     schemaVersion: 1,
     meta: {
