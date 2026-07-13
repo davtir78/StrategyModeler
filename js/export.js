@@ -201,10 +201,14 @@ async function captureSection(ctx, host, title, node) {
     const sh = Math.min(sliceHpx, canvas.height - offset);
     const slice = document.createElement("canvas");
     slice.width = canvas.width; slice.height = sh;
-    slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, sh, 0, 0, canvas.width, sh);
+    // white matte so JPEG (no alpha) doesn't turn transparent areas black
+    const sctx = slice.getContext("2d");
+    sctx.fillStyle = "#ffffff"; sctx.fillRect(0, 0, slice.width, slice.height);
+    sctx.drawImage(canvas, 0, offset, canvas.width, sh, 0, 0, canvas.width, sh);
     const imgH = sh / pxPerMm;
     if (firstSlice) { beginPage(ctx); firstSlice = false; } else { doc.addPage(); }
-    doc.addImage(slice.toDataURL("image/png"), "PNG", MARGIN, MARGIN, pageW, imgH);
+    // JPEG keeps the file small (PNG of these pages can be enormous — 100+ MB).
+    doc.addImage(slice.toDataURL("image/jpeg", 0.9), "JPEG", MARGIN, MARGIN, pageW, imgH);
     offset += sh;
   }
 }
