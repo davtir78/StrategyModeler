@@ -15,3 +15,7 @@ node_modules/
 # Local export artifacts (can be large)
 *.pdf
 *.doc
+strategy-*.html
+strategy-*.json
+strategy-*.doc
+strategy-*.pdf
