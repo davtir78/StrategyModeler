@@ -123,16 +123,30 @@ async function exportPDF(cfg) {
 // Add a fresh page unless nothing has been drawn yet (so the first section reuses page 1).
 function beginPage(ctx) { if (ctx.started) ctx.doc.addPage(); ctx.started = true; }
 
+// Draw a small right-pointing arrow with vector shapes (jsPDF's core fonts have no → glyph,
+// so text("→") renders as mangled fallback characters — draw it instead).
+function drawArrow(doc, cx, cy, color) {
+  const w = 5, h = 2.6;
+  doc.setDrawColor(...color); doc.setFillColor(...color); doc.setLineWidth(0.5);
+  doc.line(cx - w / 2, cy, cx + w / 2 - h / 2, cy);
+  doc.triangle(cx + w / 2 - h / 2, cy - h / 2, cx + w / 2 - h / 2, cy + h / 2, cx + w / 2 + h / 2, cy, "F");
+}
+
 function coverPage(doc, meta, PAGE, cfg) {
   doc.setFillColor(248, 250, 252); doc.rect(0, 0, PAGE.w, PAGE.h, "F");
   doc.setTextColor(15, 23, 42);
-  doc.setFontSize(PAGE.w < 250 ? 24 : 30); doc.setFont(undefined, "bold");
-  const titleY = PAGE.h * 0.28;
-  doc.text(meta.title || "Technology Strategy", PAGE.w / 2, titleY, { align: "center", maxWidth: PAGE.w - 40 });
+  const titleSize = PAGE.w < 250 ? 24 : 30;
+  doc.setFontSize(titleSize); doc.setFont(undefined, "bold");
+  const titleLines = doc.splitTextToSize(meta.title || "Technology Strategy", PAGE.w - 40);
+  const lineH = titleSize * 0.36; // mm per line at this font size
+  const titleTop = PAGE.h * 0.24;
+  doc.text(titleLines, PAGE.w / 2, titleTop, { align: "center" });
+
   doc.setFont(undefined, "normal"); doc.setFontSize(13); doc.setTextColor(100);
   const subtitle = (cfg && cfg.coverSubtitle) || meta.organisation;
   const subs = [subtitle, meta.author, today()].filter(Boolean);
-  doc.text(subs.join("   ·   "), PAGE.w / 2, titleY + 14, { align: "center", maxWidth: PAGE.w - 40 });
+  const subtitleY = titleTop + titleLines.length * lineH + 10;
+  doc.text(subs.join("   ·   "), PAGE.w / 2, subtitleY, { align: "center", maxWidth: PAGE.w - 40 });
 
   // 4-step flow graphic (drawn with shapes; sized to the page)
   const steps = [
@@ -145,7 +159,8 @@ function coverPage(doc, meta, PAGE, cfg) {
   const avail = PAGE.w - 40;
   const boxW = (avail - gap * (steps.length - 1)) / steps.length;
   const boxH = 30;
-  let x = (PAGE.w - avail) / 2; const y = PAGE.h * 0.52;
+  let x = (PAGE.w - avail) / 2;
+  const y = Math.max(PAGE.h * 0.52, subtitleY + 22);
   steps.forEach((s, i) => {
     doc.setDrawColor(...s.c); doc.setLineWidth(0.6);
     doc.roundedRect(x, y, boxW, boxH, 3, 3, "S");
@@ -154,10 +169,7 @@ function coverPage(doc, meta, PAGE, cfg) {
     doc.text(s.n, x + boxW / 2, y + 10.5, { align: "center" });
     doc.setTextColor(15, 23, 42); doc.setFontSize(9);
     doc.text(s.name, x + boxW / 2, y + 22, { align: "center", maxWidth: boxW - 3 });
-    if (i < steps.length - 1) {
-      doc.setTextColor(120); doc.setFontSize(13);
-      doc.text("→", x + boxW + gap / 2, y + boxH / 2 + 2, { align: "center" });
-    }
+    if (i < steps.length - 1) drawArrow(doc, x + boxW + gap / 2, y + boxH / 2, [148, 163, 184]);
     x += boxW + gap;
   });
 
