@@ -14,7 +14,31 @@ function render(container) {
   const meta = store.getState().meta;
 
   container.appendChild(h("div.view-header", {}, h("h1", { text: "Document" })));
-  container.appendChild(h("p.muted", { text: "Choose what goes into the exported PDF, set the page options, then generate. These settings are saved and also used by the header “Export PDF” button." }));
+  container.appendChild(h("p.muted", { text: "Choose what goes into the exported document, set the page options, then generate. These settings are saved." }));
+
+  // --- Preview & generate (kept at the top so it's always visible) ---
+  const previewBtn = h("button.btn.btn-primary", { text: "👁 Preview document", onclick: openPreview });
+  const htmlBtn = h("button.btn", { text: "Download Visual (HTML)", onclick: () => onGenerateHtml(htmlBtn) });
+  const wordBtn = h("button.btn", { text: "Download Word (.doc)", onclick: () => onGenerateWord(wordBtn) });
+  const genBtn = h("button.btn", { text: "Generate PDF", onclick: () => onGeneratePDF(genBtn) });
+  container.appendChild(h("div.section-card", {},
+    h("div.flex-between", {},
+      h("div", {},
+        h("h3.mt-0", { text: "Preview & generate" }),
+        h("ul.muted", { style: { margin: "4px 0", paddingLeft: "18px", fontSize: "13.5px" } },
+          h("li", { html: "<b>Preview</b> — see the exact document (with the sections you select below) before exporting." }),
+          h("li", { html: "<b>Visual (HTML)</b> — crisp cards & models exactly like the app, tiny file. Open it and use your browser's <b>Print → Save as PDF</b> for a small vector PDF." }),
+          h("li", { html: "<b>Word (.doc)</b> — the same visual layout rebuilt with Word-native tables, so it stays <b>fully editable</b>." }),
+          h("li", { html: "<b>PDF</b> — self-contained, but models are captured as images (larger file)." })
+        )
+      ),
+      h("div.stack", { style: { alignItems: "flex-end" } }, previewBtn, htmlBtn, wordBtn, genBtn)
+    )
+  ));
+
+  if (!hasLibs()) {
+    container.appendChild(h("p.pdf-error", { text: "⚠ PDF libraries (jsPDF / html2canvas) failed to load — you appear to be offline. Visual (HTML) and Word exports still work." }));
+  }
 
   // --- Cover page ---
   const subtitleInput = h("input", { type: "text", value: cfg.coverSubtitle || "", placeholder: meta.organisation || "Organisation", style: { maxWidth: "420px" } });
@@ -55,30 +79,6 @@ function render(container) {
     checkboxRow("compact", cfg.compactModel, "Compact model layout (fits large models on fewer pages)", (v) => store.updateDocConfig({ compactModel: v })),
     checkboxRow("footer", cfg.footer, "Footer with strategy title and page numbers", (v) => store.updateDocConfig({ footer: v }))
   ));
-
-  // --- Preview & generate ---
-  const previewBtn = h("button.btn.btn-primary", { text: "👁 Preview document", onclick: openPreview });
-  const htmlBtn = h("button.btn", { text: "Download Visual (HTML)", onclick: () => onGenerateHtml(htmlBtn) });
-  const wordBtn = h("button.btn", { text: "Download Word (.doc)", onclick: () => onGenerateWord(wordBtn) });
-  const genBtn = h("button.btn", { text: "Generate PDF", onclick: () => onGeneratePDF(genBtn) });
-  container.appendChild(h("div.section-card", {},
-    h("div.flex-between", {},
-      h("div", {},
-        h("h3.mt-0", { text: "Preview & generate" }),
-        h("ul.muted", { style: { margin: "4px 0", paddingLeft: "18px", fontSize: "13.5px" } },
-          h("li", { html: "<b>Preview</b> — see the exact document (with the sections you selected above) before exporting." }),
-          h("li", { html: "<b>Visual (HTML)</b> — crisp cards & models exactly like the app, tiny file. Open it and use your browser's <b>Print → Save as PDF</b> for a small vector PDF." }),
-          h("li", { html: "<b>Word (.doc)</b> — the same visual layout rebuilt with Word-native tables, so it stays <b>fully editable</b>." }),
-          h("li", { html: "<b>PDF</b> — self-contained, but models are captured as images (larger file)." })
-        )
-      ),
-      h("div.stack", { style: { alignItems: "flex-end" } }, previewBtn, htmlBtn, wordBtn, genBtn)
-    )
-  ));
-
-  if (!hasLibs()) {
-    container.appendChild(h("p.pdf-error", { text: "⚠ PDF libraries (jsPDF / html2canvas) failed to load — you appear to be offline. Visual (HTML) and Word exports still work." }));
-  }
 }
 
 async function onGeneratePDF(btn) {
@@ -113,6 +113,8 @@ function openPreview() {
     },
     footer: [
       h("button.btn", { text: "Close", onclick: () => api.close() }),
+      h("span.spacer"),
+      h("span.export-label", { text: "Export this document as:" }),
       h("button.btn", { text: "PDF", onclick: (e) => onGeneratePDF(e.currentTarget) }),
       h("button.btn", { text: "Word (.doc)", onclick: (e) => onGenerateWord(e.currentTarget) }),
       h("button.btn.btn-primary", { text: "Visual (HTML)", onclick: (e) => onGenerateHtml(e.currentTarget) }),
