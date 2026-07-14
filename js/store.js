@@ -66,6 +66,7 @@ function defaultDocConfig() {
     compactModel: true,          // render the layered model in compact ("Fit") mode
     footer: true,                // footer with strategy title + page numbers
     dataTables: false,           // append a raw data-tables reference appendix
+    showDescriptions: true,      // append component-description / product-usage-note tables under the Logical/Physical diagrams
   };
 }
 

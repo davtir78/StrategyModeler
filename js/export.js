@@ -91,10 +91,11 @@ async function exportPDF(cfg) {
   host.style.cssText = "position:absolute;left:-10000px;top:0;width:1400px;background:#fff;padding:24px;";
 
   const compact = cfg.compactModel !== false;
+  const showDesc = cfg.showDescriptions !== false;
   if (cfg.sections.users)    await captureSection(ctx, host, "Users / Personas", usersRenderable());
   if (cfg.sections.useCases) await captureSection(ctx, host, "Use Cases", useCasesRenderable());
-  if (cfg.sections.logical)  await captureSection(ctx, host, "Logical Design", buildModel("logical", { compact, intro: false }));
-  if (cfg.sections.physical) await captureSection(ctx, host, "Physical Execution", physicalRenderable(compact));
+  if (cfg.sections.logical)  await captureSection(ctx, host, "Logical Design", logicalSectionEl(compact, showDesc));
+  if (cfg.sections.physical) await captureSection(ctx, host, "Physical Execution", physicalRenderable(compact, showDesc));
   if (cfg.dataTables) {
     const ap = document.createElement("div");
     ap.innerHTML = dataTablesHtml().replace(/^<h2>.*?<\/h2>/, "");
@@ -277,7 +278,19 @@ function useCasesRenderable() {
   return grid;
 }
 
-function physicalRenderable(compact = true) {
+// Logical Design diagram + (optionally) a component-descriptions reference table underneath it.
+function logicalSectionEl(compact, showDesc) {
+  const wrap = document.createElement("div");
+  wrap.appendChild(buildModel("logical", { compact, intro: false }));
+  if (showDesc) {
+    const table = componentDescriptionsTable();
+    if (table) { const d = document.createElement("div"); d.style.marginTop = "14px"; d.innerHTML = table; wrap.appendChild(d); }
+  }
+  return wrap;
+}
+
+// Physical Execution diagram + legend + (optionally) a product-usage-notes table underneath it.
+function physicalRenderable(compact = true, showDesc = false) {
   const wrap = document.createElement("div");
   // legend
   const legend = document.createElement("div");
@@ -287,6 +300,10 @@ function physicalRenderable(compact = true) {
     .map((st) => `<span class="legend-item"><span class="legend-swatch" style="background:${st.color}"></span>${esc(st.name)}</span>`).join("");
   wrap.appendChild(legend);
   wrap.appendChild(buildModel("physical", { compact, intro: false }));
+  if (showDesc) {
+    const table = productUsageTable();
+    if (table) { const d = document.createElement("div"); d.style.marginTop = "14px"; d.innerHTML = table; wrap.appendChild(d); }
+  }
   return wrap;
 }
 
@@ -395,10 +412,11 @@ function buildDocumentDom(cfg) {
     m.innerHTML = methodologyDoc();
     root.appendChild(m);
   }
+  const showDesc = cfg.showDescriptions !== false;
   if (cfg.sections.users)    root.appendChild(docSection("Users / Personas", usersRenderable()));
   if (cfg.sections.useCases) root.appendChild(docSection("Use Cases", useCasesRenderable()));
-  if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", buildModel("logical", { intro: false })));
-  if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false)));
+  if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", logicalSectionEl(false, showDesc)));
+  if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false, showDesc)));
   if (cfg.dataTables) {
     const ap = document.createElement("div");
     ap.className = "export-section";
@@ -443,11 +461,12 @@ function exportWord(cfg) {
     const subs = [(cfg.coverSubtitle || meta.organisation), meta.author, today()].filter(Boolean);
     if (subs.length) parts.push(`<p class="doc-sub">${esc(subs.join("  ·  "))}</p>`);
   }
+  const showDesc = cfg.showDescriptions !== false;
   if (cfg.methodology) parts.push(methodologyDoc());
   if (cfg.sections.users)    parts.push(usersDoc());
   if (cfg.sections.useCases) parts.push(useCasesDoc());
-  if (cfg.sections.logical)  parts.push(logicalDoc());
-  if (cfg.sections.physical) parts.push(physicalDoc());
+  if (cfg.sections.logical)  parts.push(logicalDoc(showDesc));
+  if (cfg.sections.physical) parts.push(physicalDoc(showDesc));
   if (cfg.dataTables)        parts.push(dataTablesHtml());
 
   if (!parts.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
@@ -602,14 +621,18 @@ function bandDoc(layer, mode) {
     `<tr><td style="background:${c.bg};border:0.75pt solid ${c.border};border-top:none;padding:6pt;">${inner}</td></tr></table>`;
 }
 
-function logicalDoc() {
-  return `<h2>Logical Design</h2>` + store.layersSorted().map((l) => bandDoc(l, "logical")).join("");
+function logicalDoc(showDesc) {
+  let out = `<h2>Logical Design</h2>` + store.layersSorted().map((l) => bandDoc(l, "logical")).join("");
+  if (showDesc) out += componentDescriptionsTable();
+  return out;
 }
 
-function physicalDoc() {
+function physicalDoc(showDesc) {
   const legend = `<p>` + store.statusesSorted().map((st) =>
     `<span style="color:${st.color};">■</span> <span style="font-size:9pt;">${esc(st.name)}</span>`).join(" &nbsp; ") + `</p>`;
-  return `<h2>Physical Execution</h2>${legend}` + store.layersSorted().map((l) => bandDoc(l, "physical")).join("");
+  let out = `<h2>Physical Execution</h2>${legend}` + store.layersSorted().map((l) => bandDoc(l, "physical")).join("");
+  if (showDesc) out += productUsageTable();
+  return out;
 }
 
 // ---- Raw data-tables appendix (reference) — plain HTML tables, used by all exports ----
@@ -617,9 +640,30 @@ function dtTable(headers, rows) {
   return `<div class="dt-wrap"><table class="dt-table"><thead><tr>${headers.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead>` +
     `<tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c == null ? "" : c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
+function nm(coll, id) { return (store.byId(coll, id) || {}).name || ""; }
+
+// Per-section reference tables placed directly under a diagram (not inline in the boxes).
+// Only rows with actual content are included, and the whole table is omitted if nothing qualifies.
+function componentDescriptionsTable() {
+  const rows = store.getState().components
+    .filter((c) => (c.description || "").trim())
+    .map((c) => [`<b>${esc(c.name)}</b>`, esc(nm("layers", c.layerId)), esc(c.description)]);
+  if (!rows.length) return "";
+  return `<h3>Component descriptions</h3>` + dtTable(["Component", "Layer", "Description"], rows);
+}
+
+function productUsageTable() {
+  const rows = store.getState().products
+    .filter((p) => (p.notes || "").trim())
+    .sort((a, b) => (store.statusById(a.statusId)?.order || 99) - (store.statusById(b.statusId)?.order || 99))
+    .map((p) => [`<b>${esc(p.name)}</b>`, esc(nm("statuses", p.statusId)), esc(p.vendor || ""),
+      esc(p.notes), esc(store.componentsOfProduct(p.id).map((id) => nm("components", id)).join(", "))]);
+  if (!rows.length) return "";
+  return `<h3>Product usage notes</h3>` + dtTable(["Product", "Status", "Vendor", "Notes", "Components"], rows);
+}
+
 function dataTablesHtml() {
   const s = store.getState();
-  const nm = (coll, id) => (store.byId(coll, id) || {}).name || "";
   let out = `<h2>Data tables (reference)</h2>`;
 
   out += `<h3>Statuses</h3>` + dtTable(["Order", "Name", "Colour", "Description"],
