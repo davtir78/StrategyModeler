@@ -39,6 +39,7 @@ function render(container) {
   sectionCard.appendChild(sectionToggle("useCases", cfg.sections.useCases, "Use Cases", "Use-case cards", counts.useCases, (v) => store.updateDocConfig({ sections: { useCases: v } })));
   sectionCard.appendChild(sectionToggle("logical", cfg.sections.logical, "Logical Design", "The layered component model", counts.components, (v) => store.updateDocConfig({ sections: { logical: v } })));
   sectionCard.appendChild(sectionToggle("physical", cfg.sections.physical, "Physical Execution", "Model with mapped products + status legend", counts.products, (v) => store.updateDocConfig({ sections: { physical: v } })));
+  sectionCard.appendChild(sectionToggle("dataTables", cfg.dataTables, "Data tables (appendix)", "Raw reference tables of every entity at the end", null, (v) => store.updateDocConfig({ dataTables: v })));
   container.appendChild(sectionCard);
 
   // --- Page options ---

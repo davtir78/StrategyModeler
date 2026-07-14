@@ -65,6 +65,7 @@ function defaultDocConfig() {
     orientation: "landscape",    // "landscape" | "portrait"
     compactModel: true,          // render the layered model in compact ("Fit") mode
     footer: true,                // footer with strategy title + page numbers
+    dataTables: false,           // append a raw data-tables reference appendix
   };
 }
 

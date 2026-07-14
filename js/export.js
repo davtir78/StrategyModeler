@@ -95,6 +95,11 @@ async function exportPDF(cfg) {
   if (cfg.sections.useCases) await captureSection(ctx, host, "Use Cases", useCasesRenderable());
   if (cfg.sections.logical)  await captureSection(ctx, host, "Logical Design", buildModel("logical", { compact, intro: false }));
   if (cfg.sections.physical) await captureSection(ctx, host, "Physical Execution", physicalRenderable(compact));
+  if (cfg.dataTables) {
+    const ap = document.createElement("div");
+    ap.innerHTML = dataTablesHtml().replace(/^<h2>.*?<\/h2>/, "");
+    await captureSection(ctx, host, "Data tables (reference)", ap);
+  }
 
   host.innerHTML = "";
 
@@ -279,29 +284,71 @@ function physicalRenderable(compact = true) {
 // open it in a browser and Print -> Save as PDF for a compact vector PDF.
 // ------------------------------------------------------------
 
+// Self-contained stylesheet for exports/preview. Reproduces the app's card and
+// layered-model look so the HTML export renders correctly everywhere (served, file://,
+// offline) without depending on runtime stylesheet access.
 const EXPORT_CSS = `
+:root{--bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--text:#0f172a;--text-muted:#64748b;--accent:#2563eb;--danger:#dc2626;--warning:#f59e0b;}
 *{box-sizing:border-box;}
-body{background:#fff;margin:0;padding:26px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+body{background:#fff;margin:0;padding:26px;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5;color:#0f172a;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .export-title{font-size:26px;margin:0 0 4px;font-weight:700;}
 .export-sub{color:#64748b;margin:0 0 6px;font-size:15px;}
-.export-h{font-size:20px;font-weight:600;margin:0 0 14px;}
+.export-h{font-size:20px;font-weight:600;margin:0 0 14px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;}
 .export-section{margin-bottom:32px;}
 .export-credit{color:#64748b;font-size:12px;margin-top:24px;text-align:center;}
 .export-credit a{color:#2563eb;}
-@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box{break-inside:avoid;} }
-`;
+h2{font-size:20px;} h3{font-size:15px;color:#2563eb;margin:14px 0 4px;} p{margin:6px 0;} .muted{color:#64748b;}
 
-// Harvest the app's own stylesheets so the export looks identical to the UI.
-function collectCss() {
-  let css = "";
-  for (const sheet of Array.from(document.styleSheets || [])) {
-    let rules;
-    try { rules = sheet.cssRules; } catch (e) { continue; } // cross-origin / file:// blocked
-    if (!rules) continue;
-    for (const r of Array.from(rules)) css += r.cssText + "\n";
-  }
-  return css;
-}
+/* cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 2px rgba(15,23,42,.06);padding:16px 18px;display:flex;flex-direction:column;gap:8px;}
+.card-head{display:flex;align-items:center;gap:8px;}
+.card-head h3{margin:0;font-size:16px;color:#0f172a;flex:1;}
+.card .desc{color:#64748b;font-size:13.5px;margin:0;}
+.card .biz-value{font-style:italic;color:#64748b;font-size:13px;}
+.card .field-label,.field-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:600;margin-top:4px;}
+.card ul.bullets,ul.bullets{margin:2px 0 0;padding-left:18px;font-size:13px;} ul.bullets li{margin:1px 0;}
+.badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap;}
+.badge-primary{background:#dbeafe;color:#1d4ed8;} .badge-secondary{background:#e2e8f0;color:#334155;} .badge-external{background:#ede9fe;color:#6d28d9;}
+.card-icon{color:#2563eb;flex:none;}
+
+/* chips */
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid transparent;background:#f8fafc;color:#0f172a;line-height:1.4;}
+.chip-user{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;} .chip-usecase{background:#f0fdfa;border-color:#99f6e4;color:#0f766e;} .chip-component{background:#faf5ff;border-color:#e9d5ff;color:#7e22ce;}
+.chip .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+
+/* model */
+.model{background:linear-gradient(180deg,#f0fdf9 0%,#f8fafc 55%);border:1px solid #e2e8f0;border-radius:20px;padding:18px;}
+.model-stack{display:flex;flex-direction:column;gap:14px;}
+.model-intro{display:none;}
+.layer-band{border:1px solid;border-radius:16px;padding:16px 18px;}
+.layer-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;}
+.layer-name{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.layer-span-note{font-size:11px;color:#64748b;font-style:italic;}
+.layer-rows{display:flex;flex-direction:column;gap:12px;}
+.layer-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.layer-empty-hint{color:#64748b;font-size:13px;font-style:italic;}
+.component-box{background:#fff;border:1px solid;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.05);padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
+.component-box .comp-icon{opacity:.9;margin-bottom:2px;}
+.component-box .comp-name{font-weight:600;font-size:13px;}
+.component-box.gap{border-style:dashed;border-color:#f59e0b;background:#fffbeb;}
+.component-box .gap-label{color:#f59e0b;font-size:11px;font-weight:600;}
+.component-box .product-chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;}
+.product-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:500;border:1px solid;color:#0f172a;line-height:1.5;}
+.product-chip .dot{width:7px;height:7px;border-radius:50%;flex:none;}
+.icon{display:inline-flex;align-items:center;justify-content:center;line-height:1;flex:none;} .icon svg{display:block;}
+.legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:13px;margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:6px;} .legend-swatch{width:14px;height:14px;border-radius:3px;}
+
+/* data-tables appendix */
+.dt-wrap{overflow-x:auto;}
+.dt-table{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 18px;}
+.dt-table th,.dt-table td{border:1px solid #cbd5e1;padding:5px 8px;text-align:left;vertical-align:top;}
+.dt-table th{background:#eef2f7;font-weight:600;}
+
+@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box,.dt-table tr{break-inside:avoid;} }
+`;
 
 function docSection(title, el) {
   const d = document.createElement("div");
@@ -340,6 +387,12 @@ function buildDocumentDom(cfg) {
   if (cfg.sections.useCases) root.appendChild(docSection("Use Cases", useCasesRenderable()));
   if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", buildModel("logical", { intro: false })));
   if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false)));
+  if (cfg.dataTables) {
+    const ap = document.createElement("div");
+    ap.className = "export-section";
+    ap.innerHTML = dataTablesHtml();
+    root.appendChild(ap);
+  }
   return root;
 }
 
@@ -355,7 +408,7 @@ function exportHtml(cfg) {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${esc(meta.title || "Strategy")}</title>` +
-    `<style>${collectCss()}\n${EXPORT_CSS}</style></head>` +
+    `<style>${EXPORT_CSS}</style></head>` +
     `<body>${root.innerHTML}${credit}</body></html>`;
 
   downloadBlob(new Blob([html], { type: "text/html" }), `strategy-${slug(meta.title)}-${today()}.html`);
@@ -383,6 +436,7 @@ function exportWord(cfg) {
   if (cfg.sections.useCases) parts.push(useCasesDoc());
   if (cfg.sections.logical)  parts.push(logicalDoc());
   if (cfg.sections.physical) parts.push(physicalDoc());
+  if (cfg.dataTables)        parts.push(dataTablesHtml());
 
   if (!parts.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
 
@@ -412,6 +466,9 @@ li { margin:1pt 0; font-size:9pt; }
 .gap { color:#b45309; font-style:italic; }
 .muted { color:#666; }
 .fieldlabel { font-size:7.5pt; color:#64748b; letter-spacing:0.5pt; margin:4pt 0 1pt; }
+.dt-table { border-collapse:collapse; width:100%; margin:4pt 0 10pt; }
+.dt-table th, .dt-table td { border:0.75pt solid #b0b7c3; padding:3pt 5pt; font-size:8.5pt; vertical-align:top; text-align:left; }
+.dt-table th { background:#eef2f7; font-weight:bold; }
 </style></head>
 <body><div class="Section1">${body}</div></body></html>`;
 }
@@ -541,6 +598,45 @@ function physicalDoc() {
   const legend = `<p>` + store.statusesSorted().map((st) =>
     `<span style="color:${st.color};">■</span> <span style="font-size:9pt;">${esc(st.name)}</span>`).join(" &nbsp; ") + `</p>`;
   return `<h2>Physical Execution</h2>${legend}` + store.layersSorted().map((l) => bandDoc(l, "physical")).join("");
+}
+
+// ---- Raw data-tables appendix (reference) — plain HTML tables, used by all exports ----
+function dtTable(headers, rows) {
+  return `<div class="dt-wrap"><table class="dt-table"><thead><tr>${headers.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead>` +
+    `<tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c == null ? "" : c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+function dataTablesHtml() {
+  const s = store.getState();
+  const nm = (coll, id) => (store.byId(coll, id) || {}).name || "";
+  let out = `<h2>Data tables (reference)</h2>`;
+
+  out += `<h3>Statuses</h3>` + dtTable(["Order", "Name", "Colour", "Description"],
+    store.statusesSorted().map((st) => [st.order, `<b>${esc(st.name)}</b>`, esc(st.color), esc(st.description || "")]));
+
+  out += `<h3>Users</h3>` + dtTable(["Name", "Type", "Description", "Goals", "Pain points", "Use cases"],
+    s.users.map((u) => [`<b>${esc(u.name)}</b>`, esc(u.type || ""), esc(u.description || ""),
+      esc((u.goals || []).join("; ")), esc((u.painPoints || []).join("; ")),
+      esc(store.useCasesOfUser(u.id).map((id) => nm("useCases", id)).join(", "))]));
+
+  out += `<h3>Use Cases</h3>` + dtTable(["Name", "Description", "Business value", "Users", "Components"],
+    s.useCases.map((uc) => [`<b>${esc(uc.name)}</b>`, esc(uc.description || ""), esc(uc.businessValue || ""),
+      esc(store.usersOfUseCase(uc.id).map((id) => nm("users", id)).join(", ")),
+      esc(store.componentsOfUseCase(uc.id).map((id) => nm("components", id)).join(", "))]));
+
+  out += `<h3>Layers</h3>` + dtTable(["Order", "Name", "Colour", "Orientation", "Components"],
+    store.layersSorted().map((l) => [l.order, `<b>${esc(l.name)}</b>`, esc(l.color), esc(l.orientation),
+      store.componentsForLayer(l.id).length]));
+
+  out += `<h3>Components</h3>` + dtTable(["Name", "Layer", "Row", "Use cases", "Products"],
+    s.components.map((c) => [`<b>${esc(c.name)}</b>`, esc(nm("layers", c.layerId)), c.row == null ? "" : c.row,
+      esc(store.useCasesOfComponent(c.id).map((id) => nm("useCases", id)).join(", ")),
+      esc(store.productsOfComponent(c.id).map((id) => nm("products", id)).join(", "))]));
+
+  out += `<h3>Products</h3>` + dtTable(["Name", "Vendor", "Status", "Notes", "Components"],
+    s.products.map((p) => [`<b>${esc(p.name)}</b>`, esc(p.vendor || ""), esc(nm("statuses", p.statusId)),
+      esc(p.notes || ""), esc(store.componentsOfProduct(p.id).map((id) => nm("components", id)).join(", "))]));
+
+  return out;
 }
 
 // html string helpers
