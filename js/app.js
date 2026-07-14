@@ -27,7 +27,7 @@ const VIEWS = {
 
 const NAV = [
   { route: "home", icon: "⌂", label: "Home" },
-  { route: "users", icon: "◉", label: "Users" },
+  { route: "users", icon: "◉", label: "Users / Personas" },
   { route: "use-cases", icon: "▣", label: "Use Cases" },
   { route: "logical", icon: "▤", label: "Logical Design" },
   { route: "physical", icon: "▦", label: "Physical Execution" },

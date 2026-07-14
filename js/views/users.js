@@ -16,15 +16,15 @@ function render(container, { params } = {}) {
   const s = store.getState();
 
   container.appendChild(h("div.view-header", {},
-    h("h1", { text: "Users" }),
+    h("h1", { text: "Users / Personas" }),
     h("div.spacer"),
-    h("button.btn.btn-primary", { text: "+ Add user", onclick: () => editUser() })
+    h("button.btn.btn-primary", { text: "+ Add user / persona", onclick: () => editUser() })
   ));
 
   if (!s.users.length) {
     container.appendChild(h("div.empty-state", {},
-      h("div.big", { text: "No users yet — define who you are designing for." }),
-      h("button.btn.btn-primary", { text: "+ Add user", onclick: () => editUser() })
+      h("div.big", { text: "No users/personas yet — define who you are designing for." }),
+      h("button.btn.btn-primary", { text: "+ Add user / persona", onclick: () => editUser() })
     ));
     return;
   }

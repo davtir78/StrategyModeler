@@ -10,7 +10,7 @@ const { h, confirmDialog, toast, templateGallery } = SM.ui;
 const { go } = SM.nav;
 const { importFromFile } = SM.exportMod;
 const STEPS = [
-  { route: "users", num: 1, name: "Users", tag: "who we design for", color: "var(--accent-users)" },
+  { route: "users", num: 1, name: "Users / Personas", tag: "who we design for", color: "var(--accent-users)" },
   { route: "use-cases", num: 2, name: "Use Cases", tag: "what they need to do", color: "var(--accent-usecases)" },
   { route: "logical", num: 3, name: "Logical Design", tag: "how the system should behave", color: "var(--accent-logical)" },
   { route: "physical", num: 4, name: "Physical Execution", tag: "how it is implemented", color: "var(--accent-physical)" },
@@ -96,11 +96,11 @@ function methodology() {
   wrap.appendChild(h("div.callout", {},
     h("p.mt-0", {}, h("b", { text: "Generic strategy approach" })),
     h("p", { text: "This strategy uses a Human-Centered Technology Architecture approach, structured around a clear, universal progression:" }),
-    h("p.flow-line", { text: "Users → Use Cases → Logical Design → Physical Execution" }),
+    h("p.flow-line", { text: "Users / Personas → Use Cases → Logical Design → Physical Execution" }),
     h("p", { text: "Each step is deliberately defined so that business stakeholders, product owners, and engineers can align on why and how decisions are made." })
   ));
 
-  section(wrap, "1. Users — Who we are designing for", [
+  section(wrap, "1. Users / Personas — Who we are designing for", [
     "We begin by identifying the users and stakeholders who interact with, depend on, or are impacted by the system. This includes primary users (day-to-day operators), secondary users (support, governance, oversight), and external parties (customers, partners, regulators).",
   ], "Build a shared understanding of who matters and what they care about.",
      "Clear user groups with articulated goals, pain points, capabilities, and constraints.",

@@ -15,7 +15,7 @@ const {
 } = SM.forms;
 const { exportJSON, importFromFile } = SM.exportMod;
 const TABS = [
-  { id: "users", label: "Users" },
+  { id: "users", label: "Users / Personas" },
   { id: "use-cases", label: "Use Cases" },
   { id: "layers", label: "Layers" },
   { id: "components", label: "Components" },
@@ -67,7 +67,7 @@ function tabUsers(panel) {
     h("td", { text: String(store.useCasesOfUser(u.id).length) }),
     actionsCell(() => editUser(u), () => removeUser(u))
   ));
-  entityTable({ panel, title: "Users", addLabel: "+ Add user", onAdd: () => editUser(),
+  entityTable({ panel, title: "Users / Personas", addLabel: "+ Add user / persona", onAdd: () => editUser(),
     columns: [{ head: "Name" }, { head: "Type" }, { head: "Use cases" }], rows });
 }
 
@@ -81,7 +81,7 @@ function tabUseCases(panel) {
     actionsCell(() => editUseCase(uc), () => removeUseCase(uc))
   ));
   entityTable({ panel, title: "Use Cases", addLabel: "+ Add use case", onAdd: () => editUseCase(),
-    columns: [{ head: "Name" }, { head: "Description" }, { head: "Users" }, { head: "Components" }], rows });
+    columns: [{ head: "Name" }, { head: "Description" }, { head: "Users / Personas" }, { head: "Components" }], rows });
 }
 
 function tabLayers(panel) {
@@ -148,7 +148,7 @@ function tabMappings(panel) {
   const s = store.getState();
   panel.appendChild(h("p.muted.mt-0", { text: "Click any cell to toggle a relationship. Changes apply immediately." }));
 
-  matrix(panel, "Users × Use Cases", s.users, s.useCases,
+  matrix(panel, "Users / Personas × Use Cases", s.users, s.useCases,
     (u, uc) => store.hasMapping("userUseCases", u.id, uc.id),
     (u, uc, on) => store.setMapping("userUseCases", u.id, uc.id, on));
 

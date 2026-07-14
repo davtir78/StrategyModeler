@@ -49,7 +49,7 @@ function card(uc) {
     h("div.card-head", {}, icon, h("h3", { text: uc.name })),
     uc.description ? h("p.desc", { text: uc.description }) : null,
     uc.businessValue ? h("div.biz-value", { text: "Business value: " + uc.businessValue }) : null,
-    userChips.length ? linkRow("Users", userChips) : null,
+    userChips.length ? linkRow("Users / Personas", userChips) : null,
     compChips.length ? linkRow("Components", compChips) : null,
     h("div.card-actions", {},
       iconBtn("✎", "Edit", () => editUseCase(uc)),

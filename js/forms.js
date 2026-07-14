@@ -54,7 +54,7 @@ function editUser(user = null) {
   const ucF = field("Linked use cases", ucList);
 
   openForm({
-    title: user ? "Edit User" : "Add User",
+    title: user ? "Edit User / Persona" : "Add User / Persona",
     fields: [nameF, iconF, typeF, descF, goalsF, painF, ucF],
     validate: () => validateName(nameF),
     save: () => {
@@ -84,7 +84,7 @@ function editUseCase(uc = null) {
 
   openForm({
     title: uc ? "Edit Use Case" : "Add Use Case",
-    fields: [nameF, iconF, descF, bvF, field("Linked users", userList), field("Linked components", compList)],
+    fields: [nameF, iconF, descF, bvF, field("Linked users / personas", userList), field("Linked components", compList)],
     validate: () => validateName(nameF),
     save: () => {
       const saved = store.upsert("useCases", {

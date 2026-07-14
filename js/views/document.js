@@ -59,7 +59,7 @@ function render(container) {
     h("p.muted.mt-0", { text: "Included in this order after the cover." }));
   const counts = sectionCounts();
   sectionCard.appendChild(sectionToggle("methodology", cfg.methodology, "Methodology", "Goal / outcome summary of the 4-step method", null, (v) => store.updateDocConfig({ methodology: v })));
-  sectionCard.appendChild(sectionToggle("users", cfg.sections.users, "Users", "User cards", counts.users, (v) => store.updateDocConfig({ sections: { users: v } })));
+  sectionCard.appendChild(sectionToggle("users", cfg.sections.users, "Users / Personas", "User cards", counts.users, (v) => store.updateDocConfig({ sections: { users: v } })));
   sectionCard.appendChild(sectionToggle("useCases", cfg.sections.useCases, "Use Cases", "Use-case cards", counts.useCases, (v) => store.updateDocConfig({ sections: { useCases: v } })));
   sectionCard.appendChild(sectionToggle("logical", cfg.sections.logical, "Logical Design", "The layered component model", counts.components, (v) => store.updateDocConfig({ sections: { logical: v } })));
   sectionCard.appendChild(sectionToggle("physical", cfg.sections.physical, "Physical Execution", "Model with mapped products + status legend", counts.products, (v) => store.updateDocConfig({ sections: { physical: v } })));

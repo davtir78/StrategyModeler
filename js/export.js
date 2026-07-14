@@ -91,7 +91,7 @@ async function exportPDF(cfg) {
   host.style.cssText = "position:absolute;left:-10000px;top:0;width:1400px;background:#fff;padding:24px;";
 
   const compact = cfg.compactModel !== false;
-  if (cfg.sections.users)    await captureSection(ctx, host, "Users", usersRenderable());
+  if (cfg.sections.users)    await captureSection(ctx, host, "Users / Personas", usersRenderable());
   if (cfg.sections.useCases) await captureSection(ctx, host, "Use Cases", useCasesRenderable());
   if (cfg.sections.logical)  await captureSection(ctx, host, "Logical Design", buildModel("logical", { compact, intro: false }));
   if (cfg.sections.physical) await captureSection(ctx, host, "Physical Execution", physicalRenderable(compact));
@@ -150,7 +150,7 @@ function coverPage(doc, meta, PAGE, cfg) {
 
   // 4-step flow graphic (drawn with shapes; sized to the page)
   const steps = [
-    { n: "1", name: "Users", c: [37, 99, 235] },
+    { n: "1", name: "Users / Personas", c: [37, 99, 235] },
     { n: "2", name: "Use Cases", c: [13, 148, 136] },
     { n: "3", name: "Logical Design", c: [124, 58, 237] },
     { n: "4", name: "Physical Execution", c: [234, 88, 12] },
@@ -181,7 +181,7 @@ function methodologyPage(doc, PAGE) {
   doc.setTextColor(15, 23, 42); doc.setFont(undefined, "bold"); doc.setFontSize(20);
   doc.text("Methodology", MARGIN, 20);
   const pairs = [
-    ["1. Users — Who we design for", "Build a shared understanding of who matters and what they care about.", "Clear user groups with articulated goals, pain points and constraints."],
+    ["1. Users / Personas — Who we design for", "Build a shared understanding of who matters and what they care about.", "Clear user groups with articulated goals, pain points and constraints."],
     ["2. Use Cases — What they need to do", "Describe what users are trying to accomplish and why it matters.", "Prioritised use cases linking user goals to business value."],
     ["3. Logical Design — How the system should behave", "Define what the system must logically do to satisfy the use cases.", "A conceptual architecture of entities, processes and rules."],
     ["4. Physical Execution — How it is implemented", "Decide how and where the system will run in practice.", "A concrete technical architecture with full traceability."],
@@ -269,7 +269,7 @@ function useCasesRenderable() {
       <div class="card-head">${iconSpan(uc.icon)}<h3>${esc(uc.name)}</h3></div>
       ${uc.description ? `<p class="desc">${esc(uc.description)}</p>` : ""}
       ${uc.businessValue ? `<div class="biz-value">Business value: ${esc(uc.businessValue)}</div>` : ""}
-      ${chipsBlock("Users", store.usersOfUseCase(uc.id).map((id)=>store.byId("users",id)).filter(Boolean).map((x)=>x.name), "chip-user")}
+      ${chipsBlock("Users / Personas", store.usersOfUseCase(uc.id).map((id)=>store.byId("users",id)).filter(Boolean).map((x)=>x.name), "chip-user")}
       ${chipsBlock("Components", store.componentsOfUseCase(uc.id).map((id)=>store.byId("components",id)).filter(Boolean).map((x)=>x.name), "chip-component")}
     `;
     grid.appendChild(card);
@@ -395,7 +395,7 @@ function buildDocumentDom(cfg) {
     m.innerHTML = methodologyDoc();
     root.appendChild(m);
   }
-  if (cfg.sections.users)    root.appendChild(docSection("Users", usersRenderable()));
+  if (cfg.sections.users)    root.appendChild(docSection("Users / Personas", usersRenderable()));
   if (cfg.sections.useCases) root.appendChild(docSection("Use Cases", useCasesRenderable()));
   if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", buildModel("logical", { intro: false })));
   if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false)));
@@ -487,7 +487,7 @@ li { margin:1pt 0; font-size:9pt; }
 
 function methodologyDoc() {
   const pairs = [
-    ["1. Users — Who we design for", "Build a shared understanding of who matters and what they care about.", "Clear user groups with articulated goals, pain points and constraints."],
+    ["1. Users / Personas — Who we design for", "Build a shared understanding of who matters and what they care about.", "Clear user groups with articulated goals, pain points and constraints."],
     ["2. Use Cases — What they need to do", "Describe what users are trying to accomplish and why it matters.", "Prioritised use cases linking user goals to business value."],
     ["3. Logical Design — How the system should behave", "Define what the system must logically do to satisfy the use cases.", "A conceptual architecture of entities, processes and rules."],
     ["4. Physical Execution — How it is implemented", "Decide how and where the system will run in practice.", "A concrete technical architecture with full traceability."],
@@ -552,7 +552,7 @@ function usersDoc() {
       (ucs.length ? `<p class="fieldlabel">USE CASES</p><p style="margin:1pt 0;">${chipsLine(ucs, "#f0fdfa", "#0f766e")}</p>` : "") +
       `</td>`;
   });
-  return `<h2>Users</h2>${cardGrid(cells, 2)}`;
+  return `<h2>Users / Personas</h2>${cardGrid(cells, 2)}`;
 }
 
 function useCasesDoc() {
@@ -565,7 +565,7 @@ function useCasesDoc() {
       `<p style="margin:0;font-size:12pt;"><b>${esc(uc.name)}</b></p>` +
       (uc.description ? `<p style="margin:3pt 0;color:#475569;font-size:9pt;">${esc(uc.description)}</p>` : "") +
       (uc.businessValue ? `<p style="margin:2pt 0;color:#64748b;font-size:9pt;font-style:italic;">Business value: ${esc(uc.businessValue)}</p>` : "") +
-      (users.length ? `<p class="fieldlabel">USERS</p><p style="margin:1pt 0;">${chipsLine(users, "#eff6ff", "#1d4ed8")}</p>` : "") +
+      (users.length ? `<p class="fieldlabel">USERS / PERSONAS</p><p style="margin:1pt 0;">${chipsLine(users, "#eff6ff", "#1d4ed8")}</p>` : "") +
       (comps.length ? `<p class="fieldlabel">COMPONENTS</p><p style="margin:1pt 0;">${chipsLine(comps, "#faf5ff", "#7e22ce")}</p>` : "") +
       `</td>`;
   });
@@ -625,12 +625,12 @@ function dataTablesHtml() {
   out += `<h3>Statuses</h3>` + dtTable(["Order", "Name", "Colour", "Description"],
     store.statusesSorted().map((st) => [st.order, `<b>${esc(st.name)}</b>`, esc(st.color), esc(st.description || "")]));
 
-  out += `<h3>Users</h3>` + dtTable(["Name", "Type", "Description", "Goals", "Pain points", "Use cases"],
+  out += `<h3>Users / Personas</h3>` + dtTable(["Name", "Type", "Description", "Goals", "Pain points", "Use cases"],
     s.users.map((u) => [`<b>${esc(u.name)}</b>`, esc(u.type || ""), esc(u.description || ""),
       esc((u.goals || []).join("; ")), esc((u.painPoints || []).join("; ")),
       esc(store.useCasesOfUser(u.id).map((id) => nm("useCases", id)).join(", "))]));
 
-  out += `<h3>Use Cases</h3>` + dtTable(["Name", "Description", "Business value", "Users", "Components"],
+  out += `<h3>Use Cases</h3>` + dtTable(["Name", "Description", "Business value", "Users / Personas", "Components"],
     s.useCases.map((uc) => [`<b>${esc(uc.name)}</b>`, esc(uc.description || ""), esc(uc.businessValue || ""),
       esc(store.usersOfUseCase(uc.id).map((id) => nm("users", id)).join(", ")),
       esc(store.componentsOfUseCase(uc.id).map((id) => nm("components", id)).join(", "))]));
