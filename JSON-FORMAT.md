@@ -1,6 +1,6 @@
 # Strategy Modeler — JSON Format Reference
 
-This document fully describes the JSON file that Strategy Modeler **exports** (Configuration → Import / Export → *Download JSON backup*, or the header *Export PDF* has its own flow) and **imports** (same tab → *Import JSON…*, or the Home first-run *Import JSON…*).
+This document fully describes the JSON file that Strategy Modeler **exports** (Configuration → Import / Export → *Download JSON backup*) and **imports** (same tab → *Import JSON…*, or the Home first-run *Import JSON…*). The Document screen's Visual HTML / Word / PDF exports are a separate, presentation-focused output — see `docConfig` (§3) for what controls them.
 
 The exported file and the imported file use the **identical shape** — one JSON object representing the entire strategy. This reference is written so you (or an LLM) can hand-edit that JSON and re-import it safely.
 
@@ -17,7 +17,7 @@ The exported file and the imported file use the **identical shape** — one JSON
 {
   "schemaVersion": 1,
   "meta":      { /* §2  strategy metadata */ },
-  "docConfig": { /* §3  PDF output settings (optional) */ },
+  "docConfig": { /* §3  Document output settings (optional) */ },
   "statuses":  [ /* §4  product lifecycle classifications */ ],
   "users":     [ /* §5  user groups / personas */ ],
   "useCases":  [ /* §6  tasks/scenarios */ ],
@@ -67,9 +67,10 @@ All arrays may be omitted; the app normalises them to `[]`. To produce clean dat
 
 ---
 
-## 3. `docConfig` — PDF output settings
+## 3. `docConfig` — Document output settings
 
-Controls what the *Document* screen / *Export PDF* button produce. Entirely optional — omit it and defaults below are used.
+Controls what the *Document* screen's preview and its three exports (Visual HTML, Word, PDF)
+produce. Entirely optional — omit it and the defaults below are used.
 
 ```jsonc
 "docConfig": {
@@ -82,9 +83,12 @@ Controls what the *Document* screen / *Export PDF* button produce. Entirely opti
     "logical": true,
     "physical": true
   },
-  "orientation": "landscape",  // "landscape" | "portrait"
-  "compactModel": true,        // render the layered model in compact ("Fit") mode
-  "footer": true               // footer with strategy title + page numbers
+  "orientation": "landscape",     // "landscape" | "portrait"
+  "compactModel": true,           // render the layered model in compact ("Fit") mode
+  "footer": true,                 // footer with strategy title + page numbers (PDF)
+  "dataTables": false,            // append a raw data-tables reference appendix (all entities)
+  "showDescriptions": true        // append "Component descriptions" / "Product usage notes"
+                                   // reference tables directly under the Logical / Physical diagrams
 }
 ```
 
@@ -100,6 +104,8 @@ Controls what the *Document* screen / *Export PDF* button produce. Entirely opti
 | `orientation` | string | `"landscape"` | `"landscape"`, `"portrait"` |
 | `compactModel` | boolean | `true` | |
 | `footer` | boolean | `true` | |
+| `dataTables` | boolean | `false` | Appends one big reference appendix at the very end: plain tables of every Status, User, Use Case, Layer, Component and Product. |
+| `showDescriptions` | boolean | `true` | Appends two small in-context tables: a "Component descriptions" table right under Logical Design (only components with a non-empty `description`), and a "Product usage notes" table right under Physical Execution (only products with a non-empty `notes`, e.g. *"MuleSoft — Contain, only use with Salesforce"*). Omitted entirely if nothing qualifies. |
 
 ---
 
