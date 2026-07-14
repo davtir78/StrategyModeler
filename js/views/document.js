@@ -6,9 +6,9 @@ window.SM = window.SM || {};
 // ============================================================
 
 const store = SM.store;
-const { h, toast } = SM.ui;
+const { h, toast, openModal } = SM.ui;
 const { go } = SM.nav;
-const { exportPDF, exportWord, exportHtml } = SM.exportMod;
+const { exportPDF, exportWord, exportHtml, buildDocumentDom } = SM.exportMod;
 function render(container) {
   const cfg = store.getDocConfig();
   const meta = store.getState().meta;
@@ -55,21 +55,23 @@ function render(container) {
     checkboxRow("footer", cfg.footer, "Footer with strategy title and page numbers", (v) => store.updateDocConfig({ footer: v }))
   ));
 
-  // --- Generate ---
-  const htmlBtn = h("button.btn.btn-primary", { text: "Download Visual (HTML)", onclick: () => onGenerateHtml(htmlBtn) });
+  // --- Preview & generate ---
+  const previewBtn = h("button.btn.btn-primary", { text: "👁 Preview document", onclick: openPreview });
+  const htmlBtn = h("button.btn", { text: "Download Visual (HTML)", onclick: () => onGenerateHtml(htmlBtn) });
   const wordBtn = h("button.btn", { text: "Download Word (.doc)", onclick: () => onGenerateWord(wordBtn) });
   const genBtn = h("button.btn", { text: "Generate PDF", onclick: () => onGeneratePDF(genBtn) });
   container.appendChild(h("div.section-card", {},
     h("div.flex-between", {},
       h("div", {},
-        h("h3.mt-0", { text: "Generate" }),
+        h("h3.mt-0", { text: "Preview & generate" }),
         h("ul.muted", { style: { margin: "4px 0", paddingLeft: "18px", fontSize: "13.5px" } },
+          h("li", { html: "<b>Preview</b> — see the exact document (with the sections you selected above) before exporting." }),
           h("li", { html: "<b>Visual (HTML)</b> — crisp cards & models exactly like the app, tiny file. Open it and use your browser's <b>Print → Save as PDF</b> for a small vector PDF." }),
-          h("li", { html: "<b>Word (.doc)</b> — the same visual layout (cards, coloured layer bands, component boxes, status chips) rebuilt with Word-native tables, so it stays <b>fully editable</b>." }),
+          h("li", { html: "<b>Word (.doc)</b> — the same visual layout rebuilt with Word-native tables, so it stays <b>fully editable</b>." }),
           h("li", { html: "<b>PDF</b> — self-contained, but models are captured as images (larger file)." })
         )
       ),
-      h("div.stack", { style: { alignItems: "flex-end" } }, htmlBtn, wordBtn, genBtn)
+      h("div.stack", { style: { alignItems: "flex-end" } }, previewBtn, htmlBtn, wordBtn, genBtn)
     )
   ));
 
@@ -90,6 +92,31 @@ async function onGeneratePDF(btn) {
   } finally {
     btn.disabled = false; btn.textContent = original;
   }
+}
+
+// Large modal showing exactly what will be exported (same DOM builder as the HTML export).
+function openPreview() {
+  const api = openModal({
+    title: "Document preview",
+    xl: true,
+    render: (body) => {
+      body.classList.add("doc-preview-body");
+      const dom = buildDocumentDom();
+      if (!dom.children.length) {
+        body.appendChild(h("div.empty-state", {},
+          h("div.big", { text: "Nothing selected." }),
+          h("div.muted", { text: "Enable at least one section above to preview the document." })));
+        return;
+      }
+      body.appendChild(dom);
+    },
+    footer: [
+      h("button.btn", { text: "Close", onclick: () => api.close() }),
+      h("button.btn", { text: "PDF", onclick: (e) => onGeneratePDF(e.currentTarget) }),
+      h("button.btn", { text: "Word (.doc)", onclick: (e) => onGenerateWord(e.currentTarget) }),
+      h("button.btn.btn-primary", { text: "Visual (HTML)", onclick: (e) => onGenerateHtml(e.currentTarget) }),
+    ],
+  });
 }
 
 function onGenerateHtml(btn) {

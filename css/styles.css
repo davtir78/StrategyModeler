@@ -271,6 +271,20 @@ a { color: var(--accent); }
   max-height: 88vh; display: flex; flex-direction: column;
 }
 .modal.wide { max-width: 820px; }
+.modal.xl { max-width: 1500px; width: 96vw; max-height: 92vh; }
+
+/* ---------- Document preview ---------- */
+
+.doc-preview-body { background: var(--bg); }
+.doc-preview .export-section { margin-bottom: 30px; }
+.doc-preview .export-title { font-size: 26px; font-weight: 700; }
+.doc-preview .export-sub { color: var(--text-muted); font-size: 15px; margin-top: 4px; }
+.doc-preview .export-h {
+  font-size: 20px; font-weight: 600; margin: 0 0 14px;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px;
+}
+.doc-preview h2 { font-size: 20px; }
+.doc-preview h3 { font-size: 15px; color: var(--accent); margin: 14px 0 4px; }
 .modal-head {
   display: flex; align-items: center; padding: 16px 20px;
   border-bottom: 1px solid var(--border);

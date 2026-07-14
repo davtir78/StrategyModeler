@@ -8,7 +8,6 @@ window.SM = window.SM || {};
 const store = SM.store;
 const { h, clear, toast, closeSidePanel } = SM.ui;
 const { parseHash, go } = SM.nav;
-const { exportPDF } = SM.exportMod;
 const home = SM.view_home;
 const users = SM.view_users;
 const usecases = SM.view_usecases;
@@ -64,9 +63,8 @@ function renderShell() {
   });
   titleEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); titleEl.blur(); } });
 
-  const pdfBtn = h("button.btn.btn-primary", { text: "Export PDF", onclick: onExportPDF });
-
-  const header = h("header.app-header", {}, titleEl, pdfBtn);
+  // Exports live on the Document screen (preview + HTML / Word / PDF).
+  const header = h("header.app-header", {}, titleEl);
   const brand = h("div.brand", {},
     h("span.brand-mark", { text: "◆" }),
     h("span.brand-text", { text: "Strategy Modeler" })
@@ -87,20 +85,6 @@ function syncTitle() {
 function highlightNav(route) {
   document.querySelectorAll(".nav-item").forEach((a) =>
     a.classList.toggle("active", a.dataset.route === route));
-}
-
-async function onExportPDF(e) {
-  const btn = e.currentTarget;
-  const original = btn.textContent;
-  btn.disabled = true; btn.textContent = "Generating…";
-  try {
-    await exportPDF();
-  } catch (err) {
-    console.error(err);
-    toast(err.message || "PDF export failed. Try your browser's Print → Save as PDF.", { type: "err", duration: 6000 });
-  } finally {
-    btn.disabled = false; btn.textContent = original;
-  }
 }
 
 function route() {

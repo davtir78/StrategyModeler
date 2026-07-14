@@ -303,36 +303,60 @@ function collectCss() {
   return css;
 }
 
-function sectionWrap(title, el) {
-  return `<div class="export-section"><h2 class="export-h">${esc(title)}</h2>${el.outerHTML}</div>`;
+function docSection(title, el) {
+  const d = document.createElement("div");
+  d.className = "export-section";
+  const hh = document.createElement("h2");
+  hh.className = "export-h";
+  hh.textContent = title;
+  d.appendChild(hh);
+  d.appendChild(el);
+  return d;
+}
+
+// Build the document as DOM. Shared by the on-screen preview and the HTML export,
+// so what you preview is exactly what you get.
+function buildDocumentDom(cfg) {
+  cfg = resolveCfg(cfg);
+  const meta = store.getState().meta;
+  const root = document.createElement("div");
+  root.className = "doc-preview";
+
+  if (cfg.cover) {
+    const subs = [(cfg.coverSubtitle || meta.organisation), meta.author, today()].filter(Boolean);
+    const cover = document.createElement("div");
+    cover.className = "export-section export-cover";
+    cover.innerHTML = `<div class="export-title">${esc(meta.title || "Technology Strategy")}</div>` +
+      (subs.length ? `<div class="export-sub">${esc(subs.join("  ·  "))}</div>` : "");
+    root.appendChild(cover);
+  }
+  if (cfg.methodology) {
+    const m = document.createElement("div");
+    m.className = "export-section";
+    m.innerHTML = methodologyDoc();
+    root.appendChild(m);
+  }
+  if (cfg.sections.users)    root.appendChild(docSection("Users", usersRenderable()));
+  if (cfg.sections.useCases) root.appendChild(docSection("Use Cases", useCasesRenderable()));
+  if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", buildModel("logical", { intro: false })));
+  if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false)));
+  return root;
 }
 
 function exportHtml(cfg) {
   cfg = resolveCfg(cfg);
   const meta = store.getState().meta;
-  const parts = [];
+  const root = buildDocumentDom(cfg);
+  if (!root.children.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
 
-  if (cfg.cover) {
-    const subs = [(cfg.coverSubtitle || meta.organisation), meta.author, today()].filter(Boolean);
-    parts.push(`<div class="export-section export-cover"><div class="export-title">${esc(meta.title || "Technology Strategy")}</div>` +
-      (subs.length ? `<div class="export-sub">${esc(subs.join("  ·  "))}</div>` : "") + `</div>`);
-  }
-  if (cfg.methodology) parts.push(`<div class="export-section">${methodologyDoc()}</div>`);
-  if (cfg.sections.users)    parts.push(sectionWrap("Users", usersRenderable()));
-  if (cfg.sections.useCases) parts.push(sectionWrap("Use Cases", useCasesRenderable()));
-  if (cfg.sections.logical)  parts.push(sectionWrap("Logical Design", buildModel("logical", { intro: false })));
-  if (cfg.sections.physical) parts.push(sectionWrap("Physical Execution", physicalRenderable(false)));
-
-  if (!parts.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
-
-  parts.push(`<p class="export-credit">Component models based on reference architectures at ` +
-    `<a href="https://www.itarchitecturepatterns.net/reference-architectures">itarchitecturepatterns.net</a>.</p>`);
+  const credit = `<p class="export-credit">Component models based on reference architectures at ` +
+    `<a href="https://www.itarchitecturepatterns.net/reference-architectures">itarchitecturepatterns.net</a>.</p>`;
 
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${esc(meta.title || "Strategy")}</title>` +
     `<style>${collectCss()}\n${EXPORT_CSS}</style></head>` +
-    `<body>${parts.join("\n")}</body></html>`;
+    `<body>${root.innerHTML}${credit}</body></html>`;
 
   downloadBlob(new Blob([html], { type: "text/html" }), `strategy-${slug(meta.title)}-${today()}.html`);
 }
@@ -533,5 +557,5 @@ function chipsBlock(label, names, cls) {
 }
 
 
-SM.exportMod = { exportPDF, exportWord, exportHtml, exportJSON, importFromFile };
+SM.exportMod = { exportPDF, exportWord, exportHtml, buildDocumentDom, exportJSON, importFromFile };
 })();

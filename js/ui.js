@@ -67,11 +67,11 @@ function mountBackdrop(node, { onBackdrop } = {}) {
 }
 
 // Generic modal. content(bodyEl, close) builds the body; returns { footer:[buttons] } optionally.
-function openModal({ title, wide, render, footer }) {
+function openModal({ title, wide, xl, render, footer }) {
   let close;
   const body = h("div.modal-body");
   const foot = h("div.modal-foot");
-  const modal = h(wide ? "div.modal.wide" : "div.modal", {},
+  const modal = h(xl ? "div.modal.xl" : (wide ? "div.modal.wide" : "div.modal"), {},
     h("div.modal-head", {},
       h("h2", { text: title }),
       h("button.btn-icon", { title: "Close", onclick: () => close(), html: "&times;" })
