@@ -129,9 +129,12 @@ function openComponentPanel(cp) {
 
       const products = store.productsOfComponent(cp.id).map((id) => store.byId("products", id)).filter(Boolean)
         .sort((a, b) => order(a.statusId) - order(b.statusId));
-      const pRow = products.length
-        ? (() => { const r = h("div.chip-row"); products.forEach((p) => r.appendChild(productChip(p, cp))); return r; })()
-        : muted("No products mapped");
+      const pRow = h("div", {},
+        products.length
+          ? (() => { const r = h("div.chip-row"); products.forEach((p) => r.appendChild(productChip(p, cp))); return r; })()
+          : muted("No products mapped"),
+        h("button.btn.btn-sm", { text: "+ Add product", style: { marginTop: "8px" }, onclick: () => { closeSidePanel(); editProduct(null, cp.id); } })
+      );
       body.appendChild(field("Products", pRow));
     },
     footer: [

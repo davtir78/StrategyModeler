@@ -175,7 +175,7 @@ function editComponent(comp = null, presetLayerId = null) {
 // ------------------------------------------------------------
 // PRODUCT
 // ------------------------------------------------------------
-function editProduct(prod = null) {
+function editProduct(prod = null, presetComponentId = null) {
   const s = store.getState();
   const nameF = field("Name", textInput(prod?.name || ""), { required: true });
   const iconF = iconField(prod?.icon);
@@ -185,7 +185,8 @@ function editProduct(prod = null) {
   const statusF = field("Status", statusSel, { required: true });
   const notesF = field("Notes", textArea(prod?.notes || ""));
   const compItems = componentItemsGrouped(s);
-  const compList = checkList(compItems, prod ? store.componentsOfProduct(prod.id) : [], { grouped: true });
+  const preselected = prod ? store.componentsOfProduct(prod.id) : (presetComponentId ? [presetComponentId] : []);
+  const compList = checkList(compItems, preselected, { grouped: true });
 
   openForm({
     title: prod ? "Edit Product" : "Add Product",
