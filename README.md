@@ -22,8 +22,6 @@ build step) and the layered component model from the
   as a layered block model with vertical + cross-cutting layers.
 - **Full traceability** — click any chip to jump to the linked user/persona, use case, component or
   product (the target pulses on arrival).
-- **Physical gap analysis** — components with no mapped products get an amber "gap" treatment;
-  a *Only show gaps* toggle dims everything else.
 - **Roadmap** — a chronological timeline of the transitions your strategy makes over time
   (migrations, decommissions, new platform launches), each with a target date, status, and
   rationale, filterable by layer/component — the "what are we doing and when" view for stakeholders

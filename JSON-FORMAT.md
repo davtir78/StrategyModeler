@@ -426,7 +426,7 @@ A complete, tiny strategy you can import as-is:
 }
 ```
 
-In this example the `Catalog` component has **no** product mapped, so Physical Execution shows it as a gap (amber dashed "⚠ no products"). The Data Warehouse carries both a Strategic and a Decommission product — the canonical migration pattern — and the `transitions` entry is what turns that pattern into a dated Roadmap item.
+In this example the `Catalog` component has **no** product mapped, so Physical Execution just shows the box with no product chips. The Data Warehouse carries both a Strategic and a Decommission product — the canonical migration pattern — and the `transitions` entry is what turns that pattern into a dated Roadmap item.
 
 ---
 

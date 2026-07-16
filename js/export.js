@@ -374,8 +374,6 @@ h2{font-size:20px;} h3{font-size:15px;color:#2563eb;margin:14px 0 4px;} p{margin
 .component-box{background:#fff;border:1px solid;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.05);padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;}
 .component-box .comp-icon{opacity:.9;margin-bottom:2px;}
 .component-box .comp-name{font-weight:600;font-size:13px;}
-.component-box.gap{border-style:dashed;border-color:#f59e0b;background:#fffbeb;}
-.component-box .gap-label{color:#f59e0b;font-size:11px;font-weight:600;}
 .component-box .product-chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;}
 .product-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:500;border:1px solid;color:#0f172a;line-height:1.5;}
 .product-chip .dot{width:7px;height:7px;border-radius:50%;flex:none;}
@@ -519,7 +517,6 @@ table { border-collapse:collapse; width:100%; margin:4pt 0 8pt; }
 td { padding:0; font-size:9.5pt; vertical-align:top; text-align:left; }
 ul { margin:2pt 0; padding-left:13pt; }
 li { margin:1pt 0; font-size:9pt; }
-.gap { color:#b45309; font-style:italic; }
 .muted { color:#666; }
 .fieldlabel { font-size:7.5pt; color:#64748b; letter-spacing:0.5pt; margin:4pt 0 1pt; }
 .dt-table { border-collapse:collapse; width:100%; margin:4pt 0 10pt; }
@@ -632,9 +629,9 @@ function bandDoc(layer, mode) {
         let box = `<b style="font-size:9pt;">${esc(cp.name)}</b>`;
         if (mode === "physical") {
           const prods = prodsOf(cp);
-          box += prods.length
-            ? `<br>` + prods.map((p) => { const st = store.statusById(p.statusId); return `<span style="font-size:8pt;"><span style="color:${st ? st.color : "#999"};">■</span> ${esc(p.name)}</span>`; }).join("<br>")
-            : `<br><span class="gap" style="font-size:8pt;">⚠ no products</span>`;
+          if (prods.length) {
+            box += `<br>` + prods.map((p) => { const st = store.statusById(p.statusId); return `<span style="font-size:8pt;"><span style="color:${st ? st.color : "#999"};">■</span> ${esc(p.name)}</span>`; }).join("<br>");
+          }
         }
         inner += `<td style="width:${w}%;border:0.75pt solid ${c.header};padding:5pt;text-align:center;vertical-align:top;background:#fff;">${box}</td>`;
       });

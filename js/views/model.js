@@ -12,9 +12,9 @@ const { chip, chipRow, hexA, go } = SM.nav;
 const { editComponent, editProduct } = SM.forms;
 const { renderIcon } = SM.icons;
 // Build the full model element. mode = "logical" | "physical".
-// opts: { compact, onlyGaps }
+// opts: { compact }
 function buildModel(mode, opts = {}) {
-  const model = h("div.model" + (opts.compact ? ".compact" : "") + (opts.onlyGaps ? ".only-gaps" : ""));
+  const model = h("div.model" + (opts.compact ? ".compact" : ""));
   const layers = store.layersSorted();
 
   if (!layers.length) {
@@ -82,11 +82,7 @@ function componentBox(cp, c, mode) {
 
   if (mode === "physical") {
     const prodIds = store.productsOfComponent(cp.id);
-    if (!prodIds.length) {
-      box.classList.add("gap");
-      box.style.borderColor = "";
-      box.appendChild(h("div.gap-label", { text: "⚠ no products" }));
-    } else {
+    if (prodIds.length) {
       const products = prodIds.map((id) => store.byId("products", id)).filter(Boolean);
       products.sort((a, b) => order(a.statusId) - order(b.statusId));
       const chips = h("div.product-chips");

@@ -2,15 +2,14 @@ window.SM = window.SM || {};
 (function(){
 "use strict";
 // ============================================================
-// views/physical.js — Physical Execution (model + product mapping + gaps)
+// views/physical.js — Physical Execution (model + product mapping)
 // ============================================================
 
 const store = SM.store;
 const { h } = SM.ui;
-const { applyFocus, hexA } = SM.nav;
+const { applyFocus } = SM.nav;
 const { buildModel, applyFit } = SM.view_model;
 let compact = false;
-let onlyGaps = false;
 
 function render(container, { params } = {}) {
   container.appendChild(h("div.view-header", {},
@@ -19,16 +18,16 @@ function render(container, { params } = {}) {
     h("button.btn", { text: compact ? "⤢ Expand" : "⤢ Fit", onclick: (e) => { compact = !compact; rebuild(container, params); e.currentTarget.blur(); } })
   ));
 
-  container.appendChild(toolbar(container, params));
+  container.appendChild(toolbar());
 
   const host = h("div", { id: "model-host" });
   container.appendChild(host);
-  host.appendChild(buildModel("physical", { compact, onlyGaps }));
+  host.appendChild(buildModel("physical", { compact }));
   applyFit(container, host, compact);
   applyFocus(container, params);
 }
 
-function toolbar(container, params) {
+function toolbar() {
   const legend = h("div.legend");
   legend.appendChild(h("b", { text: "Legend:", style: { marginRight: "4px", fontSize: "13px" } }));
   store.statusesSorted().forEach((st) => {
@@ -38,18 +37,13 @@ function toolbar(container, params) {
     ));
   });
 
-  const toggle = h("label.toggle-inline", {},
-    h("input", { type: "checkbox", checked: onlyGaps, onchange: (e) => { onlyGaps = e.target.checked; rebuild(container, params); } }),
-    "Only show gaps"
-  );
-
-  return h("div.model-toolbar", {}, legend, h("div.spacer", { style: { flex: "1" } }), toggle);
+  return h("div.model-toolbar", {}, legend);
 }
 
 function rebuild(container, params) {
   const host = container.querySelector("#model-host");
   host.innerHTML = "";
-  host.appendChild(buildModel("physical", { compact, onlyGaps }));
+  host.appendChild(buildModel("physical", { compact }));
   applyFit(container, host, compact);
   const btn = container.querySelector(".view-header .btn");
   if (btn) btn.textContent = compact ? "⤢ Expand" : "⤢ Fit";
