@@ -23,6 +23,14 @@ const LAYER_COLORS = {
 };
 const LAYER_COLOR_NAMES = Object.keys(LAYER_COLORS);
 
+// Roadmap transition statuses — independent of product lifecycle status (§ Roadmap).
+const TRANSITION_STATUSES = [
+  { id: "not-started", name: "Not started", color: "#94a3b8" },
+  { id: "planned",      name: "Planned",      color: "#f59e0b" },
+  { id: "in-progress",  name: "In progress",  color: "#2563eb" },
+  { id: "done",         name: "Done",         color: "#16a34a" },
+];
+
 // Default status set seeded into every new dataset.
 const DEFAULT_STATUSES = () => ([
   { id: "strategic",    name: "Strategic",    color: "#16a34a", description: "Invest and grow — the target state.", order: 1 },
@@ -61,7 +69,7 @@ function defaultDocConfig() {
     cover: true,
     coverSubtitle: "",           // blank = fall back to meta.organisation
     methodology: true,
-    sections: { users: true, useCases: true, logical: true, physical: true },
+    sections: { users: true, useCases: true, logical: true, physical: true, roadmap: true },
     orientation: "landscape",    // "landscape" | "portrait"
     compactModel: true,          // render the layered model in compact ("Fit") mode
     footer: true,                // footer with strategy title + page numbers
@@ -74,7 +82,7 @@ function emptyDataset() {
   return {
     schemaVersion: SCHEMA_VERSION,
     meta: { title: "", organisation: "", author: "", createdAt: nowISO(), updatedAt: nowISO() },
-    statuses: [], users: [], useCases: [], layers: [], components: [], products: [],
+    statuses: [], users: [], useCases: [], layers: [], components: [], products: [], transitions: [],
     mappings: { userUseCases: [], useCaseComponents: [], componentProducts: [] },
     docConfig: defaultDocConfig(),
   };
@@ -149,6 +157,7 @@ function normalise(d) {
   d.layers = d.layers || [];
   d.components = d.components || [];
   d.products = d.products || [];
+  d.transitions = d.transitions || [];
   d.mappings = d.mappings || {};
   d.mappings.userUseCases = d.mappings.userUseCases || [];
   d.mappings.useCaseComponents = d.mappings.useCaseComponents || [];
@@ -205,11 +214,17 @@ function statusesSorted() { return [...state.statuses].sort((a, b) => a.order - 
 function layersSorted() { return [...state.layers].sort((a, b) => a.order - b.order); }
 function componentsForLayer(layerId) { return state.components.filter((c) => c.layerId === layerId); }
 
+// Roadmap transitions, earliest target date first (undated last).
+function transitionsSorted() {
+  return [...state.transitions].sort((a, b) => (a.targetDate || "9999") < (b.targetDate || "9999") ? -1 : 1);
+}
+function transitionsForComponent(componentId) { return state.transitions.filter((t) => t.componentId === componentId); }
+
 // ------------------------------------------------------------
 // Generic entity CRUD
 // ------------------------------------------------------------
 
-const COLLECTIONS = ["users", "useCases", "layers", "components", "products", "statuses"];
+const COLLECTIONS = ["users", "useCases", "layers", "components", "products", "statuses", "transitions"];
 
 function upsert(coll, obj) {
   if (!COLLECTIONS.includes(coll)) throw new Error("Unknown collection " + coll);
@@ -309,12 +324,22 @@ function deleteComponent(id) {
   dropMappings("useCaseComponents", (m) => m.componentId === id);
   dropMappings("componentProducts", (m) => m.componentId === id);
   state.components = state.components.filter((c) => c.id !== id);
+  state.transitions = state.transitions.filter((t) => t.componentId !== id);
   persist();
 }
 
 function deleteProduct(id) {
   dropMappings("componentProducts", (m) => m.productId === id);
   state.products = state.products.filter((p) => p.id !== id);
+  state.transitions.forEach((t) => {
+    if (t.fromProductId === id) t.fromProductId = undefined;
+    if (t.toProductId === id) t.toProductId = undefined;
+  });
+  persist();
+}
+
+function deleteTransition(id) {
+  state.transitions = state.transitions.filter((t) => t.id !== id);
   persist();
 }
 
@@ -375,7 +400,7 @@ function validateDataset(data) {
   if (typeof data.schemaVersion !== "number") errors.push("Missing schemaVersion.");
   else if (data.schemaVersion > SCHEMA_VERSION) errors.push(`schemaVersion ${data.schemaVersion} is newer than this app (${SCHEMA_VERSION}).`);
 
-  const arrs = ["statuses", "users", "useCases", "layers", "components", "products"];
+  const arrs = ["statuses", "users", "useCases", "layers", "components", "products", "transitions"];
   arrs.forEach((k) => { if (data[k] && !Array.isArray(data[k])) errors.push(`"${k}" must be an array.`); });
   if (data.mappings && typeof data.mappings !== "object") errors.push(`"mappings" must be an object.`);
 
@@ -389,6 +414,7 @@ function validateDataset(data) {
   (m.userUseCases || []).forEach((x) => { if (!uSet.has(x.userId) || !ucSet.has(x.useCaseId)) orphans++; });
   (m.useCaseComponents || []).forEach((x) => { if (!ucSet.has(x.useCaseId) || !cSet.has(x.componentId)) orphans++; });
   (m.componentProducts || []).forEach((x) => { if (!cSet.has(x.componentId) || !pSet.has(x.productId)) orphans++; });
+  (data.transitions || []).forEach((t) => { if (!cSet.has(t.componentId)) orphans++; });
 
   return { ok: true, orphans };
 }
@@ -403,10 +429,13 @@ function importDataset(data) {
   clean.mappings.userUseCases = clean.mappings.userUseCases.filter((x) => uSet.has(x.userId) && ucSet.has(x.useCaseId));
   clean.mappings.useCaseComponents = clean.mappings.useCaseComponents.filter((x) => ucSet.has(x.useCaseId) && cSet.has(x.componentId));
   clean.mappings.componentProducts = clean.mappings.componentProducts.filter((x) => cSet.has(x.componentId) && pSet.has(x.productId));
+  clean.transitions = clean.transitions
+    .filter((t) => cSet.has(t.componentId))
+    .map((t) => ({ ...t, fromProductId: pSet.has(t.fromProductId) ? t.fromProductId : undefined, toProductId: pSet.has(t.toProductId) ? t.toProductId : undefined }));
   replaceDataset(clean);
   return { ok: true, orphans: res.orphans };
 }
 
 
-SM.store = { subscribe, getState, defaultDocConfig, emptyDataset, blankDataset, isEmptyDataset, loadFromStorage, replaceDataset, startBlank, clearAll, updateMeta, updateDocConfig, getDocConfig, statusesSorted, layersSorted, componentsForLayer, upsert, setMapping, hasMapping, replaceLinks, linkedIds, deleteUser, deleteUseCase, deleteComponent, deleteProduct, canDeleteLayer, deleteLayer, productsUsingStatus, canDeleteStatus, deleteStatusReassign, reorder, nextOrder, validateDataset, importDataset, SCHEMA_VERSION, LAYER_COLORS, LAYER_COLOR_NAMES, DEFAULT_STATUSES, byId, statusById, layerById, useCasesOfUser, usersOfUseCase, componentsOfUseCase, useCasesOfComponent, productsOfComponent, componentsOfProduct };
+SM.store = { subscribe, getState, defaultDocConfig, emptyDataset, blankDataset, isEmptyDataset, loadFromStorage, replaceDataset, startBlank, clearAll, updateMeta, updateDocConfig, getDocConfig, statusesSorted, layersSorted, componentsForLayer, transitionsSorted, transitionsForComponent, upsert, setMapping, hasMapping, replaceLinks, linkedIds, deleteUser, deleteUseCase, deleteComponent, deleteProduct, deleteTransition, canDeleteLayer, deleteLayer, productsUsingStatus, canDeleteStatus, deleteStatusReassign, reorder, nextOrder, validateDataset, importDataset, SCHEMA_VERSION, LAYER_COLORS, LAYER_COLOR_NAMES, DEFAULT_STATUSES, TRANSITION_STATUSES, byId, statusById, layerById, useCasesOfUser, usersOfUseCase, componentsOfUseCase, useCasesOfComponent, productsOfComponent, componentsOfProduct };
 })();

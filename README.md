@@ -24,6 +24,10 @@ build step) and the layered component model from the
   product (the target pulses on arrival).
 - **Physical gap analysis** — components with no mapped products get an amber "gap" treatment;
   a *Only show gaps* toggle dims everything else.
+- **Roadmap** — a chronological timeline of the transitions your strategy makes over time
+  (migrations, decommissions, new platform launches), each with a target date, status, and
+  rationale, filterable by layer/component — the "what are we doing and when" view for stakeholders
+  who don't need the full component/product detail.
 - **Configurable statuses** — user-defined product lifecycle classifications drive the legend and
   all status chips.
 - **Configuration** — tabbed CRUD for every entity, three mapping matrices, import/export and a

@@ -6,7 +6,7 @@ window.SM = window.SM || {};
 // ============================================================
 
 const { h } = SM.ui;
-const ROUTES = ["home", "users", "use-cases", "logical", "physical", "document", "config"];
+const ROUTES = ["home", "users", "use-cases", "logical", "physical", "roadmap", "document", "config"];
 
 function parseHash() {
   const raw = (location.hash || "#/home").replace(/^#\/?/, "");

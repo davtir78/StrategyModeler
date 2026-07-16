@@ -13,6 +13,7 @@ const users = SM.view_users;
 const usecases = SM.view_usecases;
 const logical = SM.view_logical;
 const physical = SM.view_physical;
+const roadmap = SM.view_roadmap;
 const document_ = SM.view_document;
 const config = SM.view_config;
 const VIEWS = {
@@ -21,6 +22,7 @@ const VIEWS = {
   "use-cases": usecases,
   "logical": logical,
   "physical": physical,
+  "roadmap": roadmap,
   "document": document_,
   "config": config,
 };
@@ -31,6 +33,7 @@ const NAV = [
   { route: "use-cases", icon: "▣", label: "Use Cases" },
   { route: "logical", icon: "▤", label: "Logical Design" },
   { route: "physical", icon: "▦", label: "Physical Execution" },
+  { route: "roadmap", icon: "◷", label: "Roadmap" },
   { sep: true },
   { route: "document", icon: "⤓", label: "Document" },
   { route: "config", icon: "⚙", label: "Configuration" },

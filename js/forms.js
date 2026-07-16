@@ -10,7 +10,7 @@ const {
   h, openModal, confirmDialog, toast, field, textInput, numberInput, textArea,
   select, checkList, setFieldError,
 } = SM.ui;
-const { LAYER_COLORS, LAYER_COLOR_NAMES } = SM.store;
+const { LAYER_COLORS, LAYER_COLOR_NAMES, TRANSITION_STATUSES } = SM.store;
 const { renderIcon, openIconPicker } = SM.icons;
 // Icon-picker form field. wrap.getIcon() returns the chosen icon name (or undefined).
 function iconField(current) {
@@ -231,6 +231,45 @@ function editStatus(status = null) {
 }
 
 // ------------------------------------------------------------
+// TRANSITION (Roadmap)
+// ------------------------------------------------------------
+function editTransition(t = null, presetComponentId = null) {
+  const s = store.getState();
+  const compOpts = componentItemsGrouped(s).map((c) => ({ value: c.value, label: c.group + " — " + c.label }));
+  const compF = field("Component", select(compOpts, t?.componentId || presetComponentId || compOpts[0]?.value), { required: true });
+  const prodOpts = [{ value: "", label: "— none —" }, ...s.products.map((p) => ({ value: p.id, label: p.name }))];
+  const fromF = field("From product", select(prodOpts, t?.fromProductId || ""), { hint: "Optional — what this replaces." });
+  const toF = field("To product", select(prodOpts, t?.toProductId || ""), { hint: "Optional — what it becomes." });
+  const labelF = field("Label", textInput(t?.label || ""), { hint: "Optional. e.g. \"Begin Teradata → Snowflake migration\". Derived from the products above if left blank." });
+  const dateF = field("Target date", textInput(t?.targetDate || "", { type: "date" }), { required: true });
+  const statusOpts = TRANSITION_STATUSES.map((st) => ({ value: st.id, label: st.name }));
+  const statusF = field("Status", select(statusOpts, t?.status || statusOpts[0].value), { required: true });
+  const rationaleF = field("Rationale", textArea(t?.rationale || ""), { hint: "Why this change is happening." });
+
+  openForm({
+    title: t ? "Edit Transition" : "Add Transition",
+    fields: [compF, fromF, toF, labelF, dateF, statusF, rationaleF],
+    validate: () => {
+      let ok = 1;
+      if (!val(dateF)) { setFieldError(dateF, "Required."); ok = 0; } else setFieldError(dateF, null);
+      return ok;
+    },
+    save: () => {
+      store.upsert("transitions", {
+        id: t?.id, componentId: val(compF), fromProductId: val(fromF) || undefined, toProductId: val(toF) || undefined,
+        label: val(labelF), targetDate: val(dateF), status: val(statusF), rationale: val(rationaleF),
+      });
+    },
+  });
+}
+
+async function removeTransition(t) {
+  if (await confirmDialog({ title: "Delete transition", confirmLabel: "Delete", message: "Delete this roadmap transition?" })) {
+    store.deleteTransition(t.id); toast("Transition deleted");
+  }
+}
+
+// ------------------------------------------------------------
 // DELETE FLOWS (§3.4)
 // ------------------------------------------------------------
 async function removeUser(u) {
@@ -251,8 +290,9 @@ async function removeUseCase(uc) {
 
 async function removeComponent(c) {
   const nu = store.useCasesOfComponent(c.id).length, np = store.productsOfComponent(c.id).length;
+  const nt = store.transitionsForComponent(c.id).length;
   if (await confirmDialog({ title: "Delete component", confirmLabel: "Delete",
-    message: `Delete component <b>${esc(c.name)}</b>? ${nu} use-case and ${np} product link${nu + np !== 1 ? "s" : ""} will be removed.` })) {
+    message: `Delete component <b>${esc(c.name)}</b>? ${nu} use-case and ${np} product link${nu + np !== 1 ? "s" : ""} will be removed.${nt ? ` ${nt} roadmap transition${nt > 1 ? "s" : ""} will also be deleted.` : ""}` })) {
     store.deleteComponent(c.id); toast("Component deleted");
   }
 }
@@ -343,5 +383,5 @@ function componentItemsGrouped(s) {
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 
-SM.forms = { removeUser, removeUseCase, removeComponent, removeProduct, removeLayer, removeStatus, editUser, editUseCase, editLayer, editComponent, editProduct, editStatus };
+SM.forms = { removeUser, removeUseCase, removeComponent, removeProduct, removeLayer, removeStatus, removeTransition, editUser, editUseCase, editLayer, editComponent, editProduct, editStatus, editTransition };
 })();

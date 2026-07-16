@@ -24,25 +24,11 @@ function buildModel(mode, opts = {}) {
     return model;
   }
 
-  if (opts.intro !== false) model.appendChild(introCard(mode));
-
   // Flat layout: every layer is a full-width band, stacked by ascending `order`.
   const stack = h("div.model-stack");
   layers.forEach((l) => stack.appendChild(band(l, mode)));
   model.appendChild(stack);
   return model;
-}
-
-function introCard(mode) {
-  return h("div.model-intro", {},
-    h("span.intro-icon", { text: "ⓘ" }),
-    h("div", {},
-      h("h3", { text: mode === "physical" ? "Physical Component Model" : "Logical Component Model" }),
-      h("p", { text: mode === "physical"
-        ? "Products are mapped to each component and coloured by lifecycle status. Click any component or product to see details."
-        : "Click any component to see its linked use cases and mapped products." })
-    )
-  );
 }
 
 function band(layer, mode) {
@@ -188,5 +174,27 @@ function field(label, node) {
 function muted(text) { return h("div.muted", { text }); }
 
 
-SM.view_model = { buildModel, openComponentPanel, openProductPanel };
+// Scales `host` down (if needed) so its full content fits within the visible
+// height of `container` without scrolling. Call after the host is attached
+// and populated. Pass enabled=false to reset any previous scaling.
+function applyFit(container, host, enabled) {
+  host.style.transform = "";
+  host.style.transformOrigin = "";
+  host.style.marginBottom = "";
+  if (!enabled) return;
+  requestAnimationFrame(() => {
+    const naturalHeight = host.scrollHeight;
+    const containerBottom = container.getBoundingClientRect().bottom;
+    const hostTop = host.getBoundingClientRect().top;
+    const available = containerBottom - hostTop - 24;
+    if (available > 100 && naturalHeight > available) {
+      const scale = Math.max(0.3, available / naturalHeight);
+      host.style.transformOrigin = "top center";
+      host.style.transform = `scale(${scale})`;
+      host.style.marginBottom = `${-(naturalHeight - naturalHeight * scale)}px`;
+    }
+  });
+}
+
+SM.view_model = { buildModel, applyFit, openComponentPanel, openProductPanel };
 })();

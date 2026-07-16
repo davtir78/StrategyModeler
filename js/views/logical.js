@@ -7,7 +7,7 @@ window.SM = window.SM || {};
 
 const { h } = SM.ui;
 const { applyFocus } = SM.nav;
-const { buildModel } = SM.view_model;
+const { buildModel, applyFit } = SM.view_model;
 let compact = false;
 
 function render(container, { params } = {}) {
@@ -19,6 +19,7 @@ function render(container, { params } = {}) {
   const host = h("div", { id: "model-host" });
   container.appendChild(host);
   host.appendChild(buildModel("logical", { compact }));
+  applyFit(container, host, compact);
   applyFocus(container, params);
 }
 
@@ -28,6 +29,7 @@ function rebuild(container, params) {
   if (btn) btn.textContent = compact ? "⤢ Expand" : "⤢ Fit";
   host.innerHTML = "";
   host.appendChild(buildModel("logical", { compact }));
+  applyFit(container, host, compact);
   applyFocus(container, params);
 }
 

@@ -8,7 +8,7 @@ window.SM = window.SM || {};
 const store = SM.store;
 const { h } = SM.ui;
 const { applyFocus, hexA } = SM.nav;
-const { buildModel } = SM.view_model;
+const { buildModel, applyFit } = SM.view_model;
 let compact = false;
 let onlyGaps = false;
 
@@ -24,6 +24,7 @@ function render(container, { params } = {}) {
   const host = h("div", { id: "model-host" });
   container.appendChild(host);
   host.appendChild(buildModel("physical", { compact, onlyGaps }));
+  applyFit(container, host, compact);
   applyFocus(container, params);
 }
 
@@ -49,6 +50,7 @@ function rebuild(container, params) {
   const host = container.querySelector("#model-host");
   host.innerHTML = "";
   host.appendChild(buildModel("physical", { compact, onlyGaps }));
+  applyFit(container, host, compact);
   const btn = container.querySelector(".view-header .btn");
   if (btn) btn.textContent = compact ? "⤢ Expand" : "⤢ Fit";
   applyFocus(container, params);

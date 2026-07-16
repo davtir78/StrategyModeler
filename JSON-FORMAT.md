@@ -7,7 +7,7 @@ The exported file and the imported file use the **identical shape** — one JSON
 - **Export filename:** `strategy-<slugified-title>-<YYYY-MM-DD>.json` (pretty-printed, 2-space indent).
 - **Everything is one object.** There are no external files or references.
 - **IDs are opaque strings.** They can be human-readable slugs (`"u-analyst"`) or UUIDs. They only need to be **unique within their own collection** and to **match** wherever they're referenced.
-- On import the whole file is validated *before* anything is loaded; if validation fails, your current data is left untouched (see [§10](#10-import-rules--validation)).
+- On import the whole file is validated *before* anything is loaded; if validation fails, your current data is left untouched (see [§11](#11-mappings--relationships--import-rules)).
 
 ---
 
@@ -24,7 +24,8 @@ The exported file and the imported file use the **identical shape** — one JSON
   "layers":    [ /* §7  bands of the logical model */ ],
   "components":[ /* §8  logical capabilities inside layers */ ],
   "products":  [ /* §9  physical technologies */ ],
-  "mappings":  { /* §10 many-to-many relationships */ }
+  "transitions":[ /* §10 roadmap timeline entries */ ],
+  "mappings":  { /* §11 many-to-many relationships */ }
 }
 ```
 
@@ -39,6 +40,7 @@ The exported file and the imported file use the **identical shape** — one JSON
 | `layers` | array | optional | May be `[]`. |
 | `components` | array | optional | May be `[]`. |
 | `products` | array | optional | May be `[]`. |
+| `transitions` | array | optional | May be `[]`. See §10. |
 | `mappings` | object | optional | Missing → all three relationship arrays default to `[]`. |
 
 All arrays may be omitted; the app normalises them to `[]`. To produce clean data, always include them.
@@ -81,7 +83,8 @@ produce. Entirely optional — omit it and the defaults below are used.
     "users": true,
     "useCases": true,
     "logical": true,
-    "physical": true
+    "physical": true,
+    "roadmap": true
   },
   "orientation": "landscape",     // "landscape" | "portrait"
   "compactModel": true,           // render the layered model in compact ("Fit") mode
@@ -101,10 +104,11 @@ produce. Entirely optional — omit it and the defaults below are used.
 | `sections.useCases` | boolean | `true` | |
 | `sections.logical` | boolean | `true` | |
 | `sections.physical` | boolean | `true` | |
+| `sections.roadmap` | boolean | `true` | Includes the Roadmap timeline (§10 `transitions`), sorted by `targetDate`. |
 | `orientation` | string | `"landscape"` | `"landscape"`, `"portrait"` |
 | `compactModel` | boolean | `true` | |
 | `footer` | boolean | `true` | |
-| `dataTables` | boolean | `false` | Appends one big reference appendix at the very end: plain tables of every Status, User, Use Case, Layer, Component and Product. |
+| `dataTables` | boolean | `false` | Appends one big reference appendix at the very end: plain tables of every Status, User, Use Case, Layer, Component, Product and Transition. |
 | `showDescriptions` | boolean | `true` | Appends two small in-context tables: a "Component descriptions" table right under Logical Design (only components with a non-empty `description`), and a "Product usage notes" table right under Physical Execution (only products with a non-empty `notes`, e.g. *"MuleSoft — Contain, only use with Salesforce"*). Omitted entirely if nothing qualifies. |
 
 ---
@@ -144,7 +148,7 @@ Drive the Physical Execution legend and every status-coloured product chip. Orde
 {
   "id": "u-analyst",
   "name": "Business Analyst",
-  "icon": "bar-chart",              // optional; see §11 icon names
+  "icon": "bar-chart",              // optional; see §12 icon names
   "type": "primary",               // "primary" | "secondary" | "external"
   "description": "Explores governed data and builds dashboards.",
   "goals": ["Self-serve answers", "Trusted datasets"],
@@ -156,7 +160,7 @@ Drive the Physical Execution legend and every status-coloured product chip. Orde
 |---|---|---|---|
 | `id` | string | **yes** | Unique. Referenced by `mappings.userUseCases[].userId`. |
 | `name` | string | **yes** | |
-| `icon` | string | optional | Icon name (§11) or a single emoji. Omit for none. |
+| `icon` | string | optional | Icon name (§12) or a single emoji. Omit for none. |
 | `type` | string | **yes** | One of `"primary"`, `"secondary"`, `"external"`. Controls the card badge colour. |
 | `description` | string | optional | |
 | `goals` | string[] | optional | Array of strings; one bullet each. |
@@ -180,7 +184,7 @@ Drive the Physical Execution legend and every status-coloured product chip. Orde
 |---|---|---|---|
 | `id` | string | **yes** | Unique. Referenced by `userUseCases[].useCaseId` and `useCaseComponents[].useCaseId`. |
 | `name` | string | **yes** | |
-| `icon` | string | optional | Icon name (§11) or emoji. |
+| `icon` | string | optional | Icon name (§12) or emoji. |
 | `description` | string | optional | |
 | `businessValue` | string | optional | Rendered as an italic lead-in on the card. |
 
@@ -194,7 +198,7 @@ Each layer is a horizontal band in the Logical & Physical views. Rendered **flat
 {
   "id": "l-storage",
   "name": "Data Storage",
-  "color": "teal",                 // NAMED color, see §12 (not hex)
+  "color": "teal",                 // NAMED color, see §13 (not hex)
   "order": 4,                      // vertical position, ascending = top
   "orientation": "vertical",       // "vertical" | "cross-cutting"
   "description": "Scalable, decoupled storage for all data types."
@@ -231,7 +235,7 @@ A component is a box inside a layer band.
 |---|---|---|---|
 | `id` | string | **yes** | Unique. Referenced by `useCaseComponents[].componentId` and `componentProducts[].componentId`. |
 | `name` | string | **yes** | |
-| `icon` | string | optional | Icon name (§11) or emoji. |
+| `icon` | string | optional | Icon name (§12) or emoji. |
 | `description` | string | optional | Shown in the click-through side panel. |
 | `layerId` | string | **yes** | Must equal an existing `layers[].id`. A component whose layer doesn't exist won't render. |
 | `row` | number | optional | Positive integer. Components sharing a `row` sit on the same horizontal row within the band. Components **without** `row` flow after the highest-numbered row. Omit to let it flow. |
@@ -255,14 +259,46 @@ A component is a box inside a layer band.
 |---|---|---|---|
 | `id` | string | **yes** | Unique. Referenced by `componentProducts[].productId`. |
 | `name` | string | **yes** | |
-| `icon` | string | optional | Icon name (§11) or emoji. |
+| `icon` | string | optional | Icon name (§12) or emoji. |
 | `vendor` | string | optional | |
 | `statusId` | string | **yes** | Must equal an existing `statuses[].id`. Determines the chip colour and sort order. |
 | `notes` | string | optional | Shown in the product side panel and chip tooltip. |
 
 ---
 
-## 10. `mappings` — relationships & import rules
+## 10. `transitions` — roadmap timeline entries
+
+Each entry is one planned or in-flight change — a migration, decommission, or new platform launch — plotted on the Roadmap view's timeline, sorted by `targetDate`.
+
+```jsonc
+{
+  "id": "t-edw-migration",
+  "componentId": "c-edw",           // MUST match a components[].id
+  "fromProductId": "p-tera",        // optional — MUST match a products[].id if present
+  "toProductId": "p-snow",          // optional — MUST match a products[].id if present
+  "label": "Begin Teradata → Snowflake migration",   // optional
+  "targetDate": "2026-03-31",       // required, YYYY-MM-DD
+  "status": "planned",              // "not-started" | "planned" | "in-progress" | "done"
+  "rationale": "Reduce duplicate EDW licensing."
+}
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | string | **yes** | Unique within `transitions`. |
+| `componentId` | string | **yes** | Must equal an existing `components[].id`. A component may have any number of transitions (e.g. sequential migration steps). |
+| `fromProductId` | string | optional | What this change replaces. Must equal an existing `products[].id` if present. |
+| `toProductId` | string | optional | What it becomes. Must equal an existing `products[].id` if present. |
+| `label` | string | optional | Free-text action name shown as the card title. If blank, the app derives one from `fromProductId`/`toProductId` (e.g. `"Teradata → Snowflake"`, `"Retire Teradata"`, `"Introduce Snowflake"`). |
+| `targetDate` | string | **yes** | `YYYY-MM-DD`. Drives the timeline's sort order and quarter grouping. |
+| `status` | string | **yes** | One of `not-started`, `planned`, `in-progress`, `done`. Independent of the linked products' lifecycle `statusId` — a migration can be "in progress" while its target product is still "emerging". |
+| `rationale` | string | optional | The "why" — shown under the card title. |
+
+At least one of `fromProductId` / `toProductId` is expected for the derived label to be meaningful, but neither is enforced — a transition with only a `componentId` and dates is valid (it just falls back to the component name as its label).
+
+---
+
+## 11. `mappings` — relationships & import rules
 
 Three **many-to-many** relationships, each an array of `{ }` pairs. No pair should be duplicated (the app de-duplicates anyway).
 
@@ -294,10 +330,11 @@ When you import a file:
 
 1. **Fatal (import rejected, current data kept):**
    - `schemaVersion` missing or not a number, or greater than the app version.
-   - Any of `statuses`/`users`/`useCases`/`layers`/`components`/`products` present but not an array.
+   - Any of `statuses`/`users`/`useCases`/`layers`/`components`/`products`/`transitions` present but not an array.
    - `mappings` present but not an object.
 2. **Non-fatal (silently cleaned):**
    - **Orphan mapping pairs** — any pair referencing a non-existent id is **dropped**, and the success toast reports how many were removed. So it's safe to leave a few dangling pairs, but cleaner not to.
+   - **Orphan transitions** — a transition whose `componentId` doesn't match any component is **dropped**; a `fromProductId`/`toProductId` that doesn't match any product is cleared (the transition itself is kept).
    - Missing arrays are created as `[]`. Missing `docConfig`/`meta` fields are defaulted.
    - If `statuses` is empty, the 5 defaults are seeded.
 
@@ -305,7 +342,7 @@ There is **no automatic cascade the other way**: e.g. deleting a component from 
 
 ---
 
-## 11. Valid `icon` names
+## 12. Valid `icon` names
 
 `icon` is optional on users, use cases, components, and products. Use one of the names below, **or** a single emoji (e.g. `"🚀"`), or omit the field for no icon. Unknown names fall back to rendering the raw text.
 
@@ -324,7 +361,7 @@ code, terminal, git-branch, git-merge, settings, wrench, bell, calendar, compass
 
 ---
 
-## 12. Valid `layer.color` names
+## 13. Valid `layer.color` names
 
 `layers[].color` must be one of these **named** colors (each defines a band background/border/header tint). This is different from `statuses[].color`, which is a raw hex value.
 
@@ -334,7 +371,7 @@ blue, teal, green, amber, purple, rose, indigo, cyan, lime, slate
 
 ---
 
-## 13. Minimal valid example
+## 14. Minimal valid example
 
 A complete, tiny strategy you can import as-is:
 
@@ -369,6 +406,11 @@ A complete, tiny strategy you can import as-is:
     { "id": "p-snow", "name": "Snowflake", "icon": "database", "vendor": "Snowflake", "statusId": "strategic", "notes": "Target EDW." },
     { "id": "p-tera", "name": "Teradata", "icon": "database", "vendor": "Teradata", "statusId": "decommission", "notes": "Legacy; migrating off." }
   ],
+  "transitions": [
+    { "id": "t1", "componentId": "c-edw", "fromProductId": "p-tera", "toProductId": "p-snow",
+      "label": "Migrate Teradata to Snowflake", "targetDate": "2026-09-30", "status": "planned",
+      "rationale": "Reduce duplicate EDW licensing." }
+  ],
   "mappings": {
     "userUseCases": [ { "userId": "u1", "useCaseId": "uc1" } ],
     "useCaseComponents": [
@@ -384,24 +426,25 @@ A complete, tiny strategy you can import as-is:
 }
 ```
 
-In this example the `Catalog` component has **no** product mapped, so Physical Execution shows it as a gap (amber dashed "⚠ no products"). The Data Warehouse carries both a Strategic and a Decommission product — the canonical migration pattern.
+In this example the `Catalog` component has **no** product mapped, so Physical Execution shows it as a gap (amber dashed "⚠ no products"). The Data Warehouse carries both a Strategic and a Decommission product — the canonical migration pattern — and the `transitions` entry is what turns that pattern into a dated Roadmap item.
 
 ---
 
-## 14. Checklist for hand-edited / LLM-generated JSON
+## 15. Checklist for hand-edited / LLM-generated JSON
 
 Before importing, confirm:
 
 - [ ] `schemaVersion` is `1`.
 - [ ] Every `id` is unique **within its collection**.
 - [ ] Every `user.type` is `primary` / `secondary` / `external`.
-- [ ] Every `layer.color` is a **named** color from §12; every `status.color` is a **hex** string.
+- [ ] Every `layer.color` is a **named** color from §13; every `status.color` is a **hex** string.
 - [ ] Every `layer.orientation` is `vertical` / `cross-cutting`.
 - [ ] Every `component.layerId` matches a real `layers[].id`.
 - [ ] Every `product.statusId` matches a real `statuses[].id`.
 - [ ] At least one status exists.
 - [ ] Every mapping pair references ids that exist (or accept they'll be dropped as orphans).
 - [ ] `order` and `row` values are positive integers.
-- [ ] Any `icon` is a name from §11 or a single emoji (or omitted).
+- [ ] Any `icon` is a name from §12 or a single emoji (or omitted).
+- [ ] Every `transition.componentId` matches a real `components[].id`; `targetDate` is `YYYY-MM-DD`; `status` is one of `not-started` / `planned` / `in-progress` / `done`.
 
 A handy prompt for an LLM: *"Here is the Strategy Modeler JSON schema (paste this file). Adjust the following dataset to incorporate <your info>, keeping every id unique and every referenced id valid, using only the allowed enum values for `type`, `orientation`, layer `color` names, and `icon` names. Return the full JSON object."*

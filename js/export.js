@@ -8,6 +8,7 @@ window.SM = window.SM || {};
 const store = SM.store;
 const { buildModel } = SM.view_model;
 const { iconMarkup } = SM.icons;
+const { TRANSITION_STATUSES } = store;
 const slug = (s) => (s || "strategy").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "strategy";
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -96,6 +97,7 @@ async function exportPDF(cfg) {
   if (cfg.sections.useCases) await captureSection(ctx, host, "Use Cases", useCasesRenderable());
   if (cfg.sections.logical)  await captureSection(ctx, host, "Logical Design", logicalSectionEl(compact, showDesc));
   if (cfg.sections.physical) await captureSection(ctx, host, "Physical Execution", physicalRenderable(compact, showDesc));
+  if (cfg.sections.roadmap) await captureSection(ctx, host, "Roadmap", roadmapRenderable());
   if (cfg.dataTables) {
     const ap = document.createElement("div");
     ap.innerHTML = dataTablesHtml().replace(/^<h2>.*?<\/h2>/, "");
@@ -281,11 +283,23 @@ function useCasesRenderable() {
 // Logical Design diagram + (optionally) a component-descriptions reference table underneath it.
 function logicalSectionEl(compact, showDesc) {
   const wrap = document.createElement("div");
-  wrap.appendChild(buildModel("logical", { compact, intro: false }));
+  wrap.appendChild(buildModel("logical", { compact }));
   if (showDesc) {
     const table = componentDescriptionsTable();
     if (table) { const d = document.createElement("div"); d.style.marginTop = "14px"; d.innerHTML = table; wrap.appendChild(d); }
   }
+  return wrap;
+}
+
+// Roadmap timeline (read-only — no edit/delete controls in the exported document).
+function roadmapRenderable() {
+  const list = store.transitionsSorted();
+  const wrap = document.createElement("div");
+  if (!list.length) {
+    wrap.innerHTML = `<p class="muted">No transitions yet.</p>`;
+    return wrap;
+  }
+  wrap.appendChild(SM.view_roadmap.buildTimeline(list, { editable: false }));
   return wrap;
 }
 
@@ -299,7 +313,7 @@ function physicalRenderable(compact = true, showDesc = false) {
   legend.innerHTML = "<b style='margin-right:4px'>Legend:</b>" + store.statusesSorted()
     .map((st) => `<span class="legend-item"><span class="legend-swatch" style="background:${st.color}"></span>${esc(st.name)}</span>`).join("");
   wrap.appendChild(legend);
-  wrap.appendChild(buildModel("physical", { compact, intro: false }));
+  wrap.appendChild(buildModel("physical", { compact }));
   if (showDesc) {
     const table = productUsageTable();
     if (table) { const d = document.createElement("div"); d.style.marginTop = "14px"; d.innerHTML = table; wrap.appendChild(d); }
@@ -350,7 +364,6 @@ h2{font-size:20px;} h3{font-size:15px;color:#2563eb;margin:14px 0 4px;} p{margin
 /* model */
 .model{background:linear-gradient(180deg,#f0fdf9 0%,#f8fafc 55%);border:1px solid #e2e8f0;border-radius:20px;padding:18px;}
 .model-stack{display:flex;flex-direction:column;gap:14px;}
-.model-intro{display:none;}
 .layer-band{border:1px solid;border-radius:16px;padding:16px 18px;}
 .layer-head{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;}
 .layer-name{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
@@ -370,13 +383,23 @@ h2{font-size:20px;} h3{font-size:15px;color:#2563eb;margin:14px 0 4px;} p{margin
 .legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:13px;margin-bottom:12px;}
 .legend-item{display:flex;align-items:center;gap:6px;} .legend-swatch{width:14px;height:14px;border-radius:3px;}
 
+/* roadmap timeline */
+.roadmap-group{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:600;margin:22px 0 10px;}
+.roadmap-group:first-child{margin-top:0;}
+.roadmap-item{display:flex;gap:14px;margin-bottom:12px;}
+.roadmap-dot{flex:none;width:12px;height:12px;margin-top:6px;border-radius:50%;background:#fff;border:3px solid;}
+.roadmap-card{flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 2px rgba(15,23,42,.06);padding:12px 16px;display:flex;flex-direction:column;gap:4px;}
+.roadmap-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.roadmap-title{font-size:14px;font-weight:600;}
+.roadmap-status{flex:none;}
+
 /* data-tables appendix */
 .dt-wrap{overflow-x:auto;}
 .dt-table{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0 18px;}
 .dt-table th,.dt-table td{border:1px solid #cbd5e1;padding:5px 8px;text-align:left;vertical-align:top;}
 .dt-table th{background:#eef2f7;font-weight:600;}
 
-@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box,.dt-table tr{break-inside:avoid;} }
+@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box,.roadmap-card,.dt-table tr{break-inside:avoid;} }
 `;
 
 function docSection(title, el) {
@@ -417,6 +440,7 @@ function buildDocumentDom(cfg) {
   if (cfg.sections.useCases) root.appendChild(docSection("Use Cases", useCasesRenderable()));
   if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", logicalSectionEl(false, showDesc)));
   if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false, showDesc)));
+  if (cfg.sections.roadmap) root.appendChild(docSection("Roadmap", roadmapRenderable()));
   if (cfg.dataTables) {
     const ap = document.createElement("div");
     ap.className = "export-section";
@@ -467,6 +491,7 @@ function exportWord(cfg) {
   if (cfg.sections.useCases) parts.push(useCasesDoc());
   if (cfg.sections.logical)  parts.push(logicalDoc(showDesc));
   if (cfg.sections.physical) parts.push(physicalDoc(showDesc));
+  if (cfg.sections.roadmap)  parts.push(roadmapDoc());
   if (cfg.dataTables)        parts.push(dataTablesHtml());
 
   if (!parts.length) throw new Error("Nothing selected to include. Enable at least one section on the Document screen.");
@@ -635,6 +660,54 @@ function physicalDoc(showDesc) {
   return out;
 }
 
+const TRANSITION_BADGE_STYLE = {
+  "not-started": "background:#f1f5f9;color:#475569;",
+  "planned":     "background:#fef3c7;color:#b45309;",
+  "in-progress": "background:#dbeafe;color:#1d4ed8;",
+  "done":        "background:#dcfce7;color:#15803d;",
+};
+
+function roadmapDoc() {
+  const list = store.transitionsSorted();
+  if (!list.length) return `<h2>Roadmap</h2><p class="muted">No transitions yet.</p>`;
+
+  let out = `<h2>Roadmap</h2>`;
+  let lastGroup = null;
+  list.forEach((t) => {
+    const group = quarterLabelDoc(t.targetDate);
+    if (group !== lastGroup) { out += `<p style="margin:10pt 0 4pt;font-size:9pt;font-weight:bold;color:#64748b;letter-spacing:0.5pt;">${esc(group.toUpperCase())}</p>`; lastGroup = group; }
+
+    const comp = store.byId("components", t.componentId);
+    const layer = comp ? store.layerById(comp.layerId) : null;
+    const from = t.fromProductId ? store.byId("products", t.fromProductId) : null;
+    const to = t.toProductId ? store.byId("products", t.toProductId) : null;
+    const st = TRANSITION_STATUSES.find((x) => x.id === t.status) || TRANSITION_STATUSES[0];
+    const title = t.label || roadmapDefaultLabel(from, to, comp);
+    const subtitleBits = [comp ? comp.name : "—", layer ? layer.name : null].filter(Boolean).join(" · ");
+    const productBits = [from ? "from " + from.name : null, to ? "to " + to.name : null].filter(Boolean).join(" ");
+
+    out += `<table style="margin:0 0 6pt;"><tr><td style="border:0.75pt solid #e2e8f0;padding:6pt 8pt;background:#fff;">` +
+      `<table><tr><td style="border:none;padding:0;"><b style="font-size:10pt;">${esc(title)}</b></td>` +
+      `<td style="border:none;padding:0;text-align:right;"><span style="${TRANSITION_BADGE_STYLE[st.id] || TRANSITION_BADGE_STYLE["not-started"]}font-size:7.5pt;font-weight:bold;padding:1pt 6pt;">${esc(st.name.toUpperCase())}</span></td></tr></table>` +
+      `<p class="muted" style="margin:2pt 0 0;font-size:8.5pt;">${esc(subtitleBits + (productBits ? " · " + productBits : ""))}</p>` +
+      (t.rationale ? `<p style="margin:3pt 0 0;font-size:9pt;">${esc(t.rationale)}</p>` : "") +
+      `</td></tr></table>`;
+  });
+  return out;
+}
+function roadmapDefaultLabel(from, to, comp) {
+  if (from && to) return `${from.name} → ${to.name}`;
+  if (to) return `Introduce ${to.name}`;
+  if (from) return `Retire ${from.name}`;
+  return comp ? comp.name : "Transition";
+}
+function quarterLabelDoc(dateStr) {
+  if (!dateStr) return "No date";
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d)) return "No date";
+  return `Q${Math.floor(d.getMonth() / 3) + 1} ${d.getFullYear()}`;
+}
+
 // ---- Raw data-tables appendix (reference) — plain HTML tables, used by all exports ----
 function dtTable(headers, rows) {
   return `<div class="dt-wrap"><table class="dt-table"><thead><tr>${headers.map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead>` +
@@ -691,6 +764,11 @@ function dataTablesHtml() {
   out += `<h3>Products</h3>` + dtTable(["Name", "Vendor", "Status", "Notes", "Components"],
     s.products.map((p) => [`<b>${esc(p.name)}</b>`, esc(p.vendor || ""), esc(nm("statuses", p.statusId)),
       esc(p.notes || ""), esc(store.componentsOfProduct(p.id).map((id) => nm("components", id)).join(", "))]));
+
+  out += `<h3>Transitions</h3>` + dtTable(["Target date", "Label", "Component", "From", "To", "Status", "Rationale"],
+    store.transitionsSorted().map((t) => [esc(t.targetDate || ""), esc(t.label || ""), esc(nm("components", t.componentId)),
+      esc(t.fromProductId ? nm("products", t.fromProductId) : ""), esc(t.toProductId ? nm("products", t.toProductId) : ""),
+      esc((TRANSITION_STATUSES.find((x) => x.id === t.status) || {}).name || ""), esc(t.rationale || "")]));
 
   return out;
 }
