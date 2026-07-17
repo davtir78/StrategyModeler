@@ -232,8 +232,10 @@ window.STRATEGY_TEMPLATES.push({
     ],
     transitions: [
       // EDW migration told as three sequential steps on the same component.
+      // Only the first step needs an explicit startDate — the later two chain
+      // from the previous step's targetDate automatically.
       { id: "t-edw-migrate-start", componentId: "c-edw", fromProductId: "p-teradata", toProductId: "p-snowflake",
-        label: "Begin Teradata → Snowflake migration", targetDate: "2026-03-31", status: "done",
+        label: "Begin Teradata → Snowflake migration", startDate: "2025-10-01", targetDate: "2026-03-31", status: "done",
         rationale: "First marts migrated; dual-run period begins." },
       { id: "t-edw-cutover", componentId: "c-edw", fromProductId: "p-teradata", toProductId: "p-snowflake",
         label: "Snowflake cutover — all reporting workloads", targetDate: "2027-03-31", status: "in-progress",
@@ -242,20 +244,21 @@ window.STRATEGY_TEMPLATES.push({
         label: "Teradata decommissioned", targetDate: "2027-12-31", status: "not-started",
         rationale: "Licences cancelled — completes the duplicate-EDW cost reduction." },
       { id: "t-lake-hdfs-s3", componentId: "c-data-lake", fromProductId: "p-hdfs", toProductId: "p-s3",
-        targetDate: "2026-11-30", status: "in-progress",
+        startDate: "2026-06-01", targetDate: "2026-11-30", status: "in-progress",
         rationale: "Move remaining HDFS data to S3/Iceberg before the cluster hardware refresh." },
       { id: "t-ingest-ssis-fivetran", componentId: "c-database-ingestion", fromProductId: "p-ssis", toProductId: "p-fivetran",
-        targetDate: "2026-09-30", status: "in-progress",
+        startDate: "2026-04-01", targetDate: "2026-09-30", status: "in-progress",
         rationale: "Replace legacy batch feeds with managed CDC connectors." },
       { id: "t-stream-flink-pilot", componentId: "c-stream-processing", toProductId: "p-flink",
-        label: "Flink pilot go / no-go", targetDate: "2026-10-31", status: "in-progress",
+        label: "Flink pilot go / no-go", startDate: "2026-05-01", targetDate: "2026-10-31", status: "in-progress",
         rationale: "Decide the fraud-detection stream-processing platform from pilot results." },
       { id: "t-access-immuta", componentId: "c-access-control", toProductId: "p-immuta",
-        label: "Roll out policy-based access control", targetDate: "2026-12-31", status: "planned",
+        label: "Roll out policy-based access control", startDate: "2026-09-01", targetDate: "2026-12-31", status: "planned",
         rationale: "Extend the Immuta pilot to every governed dataset." },
       { id: "t-orch-controlm-airflow", componentId: "c-orchestration", fromProductId: "p-controlm", toProductId: "p-airflow",
-        targetDate: "2027-03-31", status: "planned",
+        startDate: "2026-10-01", targetDate: "2027-03-31", status: "planned",
         rationale: "Migrate remaining Control-M jobs; retire the legacy scheduler." },
+      // No startDate here — demonstrates the Gantt's fallback (today, since it hasn't started).
       { id: "t-ml-consolidate", componentId: "c-ml-training", fromProductId: "p-sagemaker", toProductId: "p-databricks",
         targetDate: "2027-09-30", status: "not-started",
         rationale: "Consolidate ML training onto Databricks to reduce platform sprawl." },
