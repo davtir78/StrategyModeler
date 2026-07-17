@@ -242,6 +242,7 @@ function editTransition(t = null, presetComponentId = null) {
   const fromF = field("From product", select(prodOpts, t?.fromProductId || ""), { hint: "Optional — what this replaces." });
   const toF = field("To product", select(prodOpts, t?.toProductId || ""), { hint: "Optional — what it becomes." });
   const labelF = field("Label", textInput(t?.label || ""), { hint: "Optional. e.g. \"Begin Teradata → Snowflake migration\". Derived from the products above if left blank." });
+  const startF = field("Start date", textInput(t?.startDate || "", { type: "date" }), { hint: "Optional. Defaults to today on the Roadmap Gantt if left blank." });
   const dateF = field("Target date", textInput(t?.targetDate || "", { type: "date" }), { required: true });
   const statusOpts = TRANSITION_STATUSES.map((st) => ({ value: st.id, label: st.name }));
   const statusF = field("Status", select(statusOpts, t?.status || statusOpts[0].value), { required: true });
@@ -249,7 +250,7 @@ function editTransition(t = null, presetComponentId = null) {
 
   openForm({
     title: t ? "Edit Transition" : "Add Transition",
-    fields: [compF, fromF, toF, labelF, dateF, statusF, rationaleF],
+    fields: [compF, fromF, toF, labelF, startF, dateF, statusF, rationaleF],
     validate: () => {
       let ok = 1;
       if (!val(dateF)) { setFieldError(dateF, "Required."); ok = 0; } else setFieldError(dateF, null);
@@ -258,7 +259,7 @@ function editTransition(t = null, presetComponentId = null) {
     save: () => {
       store.upsert("transitions", {
         id: t?.id, componentId: val(compF), fromProductId: val(fromF) || undefined, toProductId: val(toF) || undefined,
-        label: val(labelF), targetDate: val(dateF), status: val(statusF), rationale: val(rationaleF),
+        label: val(labelF), startDate: val(startF) || undefined, targetDate: val(dateF), status: val(statusF), rationale: val(rationaleF),
       });
     },
   });

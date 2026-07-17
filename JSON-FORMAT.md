@@ -277,6 +277,7 @@ Each entry is one planned or in-flight change — a migration, decommission, or 
   "fromProductId": "p-tera",        // optional — MUST match a products[].id if present
   "toProductId": "p-snow",          // optional — MUST match a products[].id if present
   "label": "Begin Teradata → Snowflake migration",   // optional
+  "startDate": "2026-01-01",        // optional, YYYY-MM-DD — see below
   "targetDate": "2026-03-31",       // required, YYYY-MM-DD
   "status": "planned",              // "not-started" | "planned" | "in-progress" | "done"
   "rationale": "Reduce duplicate EDW licensing."
@@ -290,7 +291,8 @@ Each entry is one planned or in-flight change — a migration, decommission, or 
 | `fromProductId` | string | optional | What this change replaces. Must equal an existing `products[].id` if present. |
 | `toProductId` | string | optional | What it becomes. Must equal an existing `products[].id` if present. |
 | `label` | string | optional | Free-text action name shown as the card title. If blank, the app derives one from `fromProductId`/`toProductId` (e.g. `"Teradata → Snowflake"`, `"Retire Teradata"`, `"Introduce Snowflake"`). |
-| `targetDate` | string | **yes** | `YYYY-MM-DD`. Drives the timeline's sort order and quarter grouping. |
+| `startDate` | string | optional | `YYYY-MM-DD`. Only used by the Roadmap **Gantt** view, to draw the bar's start. If omitted, the Gantt uses the previous transition's `targetDate` on the same `componentId` if one exists, else today — clamped so the bar never starts after its own `targetDate`. Not used by the card timeline. |
+| `targetDate` | string | **yes** | `YYYY-MM-DD`. Drives the timeline's sort order and quarter grouping, and is the Gantt bar's end / milestone date. |
 | `status` | string | **yes** | One of `not-started`, `planned`, `in-progress`, `done`. Independent of the linked products' lifecycle `statusId` — a migration can be "in progress" while its target product is still "emerging". |
 | `rationale` | string | optional | The "why" — shown under the card title. |
 

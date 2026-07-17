@@ -212,9 +212,10 @@ function modelSvg(mode) {
 
 // ------------------------------------------------------------
 // Roadmap Gantt → SVG. One row per transition (sorted by date); each bar runs
-// from the previous transition on the same component (or the chart start) to
-// its target date, coloured by transition status. Quarter columns on top.
-// Returns { xml, w, h } or null when no dated transitions exist.
+// from its own `startDate` if set, else from the previous transition on the
+// same component, else from today, through to its target date — coloured by
+// transition status, clamped so it never runs past its own end. Quarter
+// columns on top. Returns { xml, w, h } or null when no dated transitions exist.
 // ------------------------------------------------------------
 
 function quarterStart(d) { return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1); }
@@ -238,15 +239,23 @@ function ganttSvg(list) {
     return { t, comp, title, st, date: new Date(t.targetDate + "T00:00:00") };
   });
 
-  // per-component chaining: bar starts where the previous step of the same component ended
+  // Bar start, per row: explicit startDate > previous step on the same component > today.
+  // Clamped so a bar never runs past its own target date (e.g. a past "done" item with
+  // no startDate — today would otherwise be later than the date it's meant to end at).
+  const today = new Date(new Date().toDateString());
   const lastByComp = {};
   rows.forEach((r) => {
-    r.prev = lastByComp[r.t.componentId] || null;
+    const explicit = r.t.startDate ? new Date(r.t.startDate + "T00:00:00") : null;
+    const chained = lastByComp[r.t.componentId] || null;
+    let start = explicit || chained || today;
+    if (start > r.date) start = r.date;
+    r.start = start;
     lastByComp[r.t.componentId] = r.date;
   });
 
   // time span padded to whole quarters (one leading quarter so first bars have a run-up)
-  const minDate = rows[0].date, maxDate = rows[rows.length - 1].date;
+  const minDate = rows.reduce((m, r) => (r.start < m ? r.start : m), rows[0].start);
+  const maxDate = rows[rows.length - 1].date;
   const chartStart = addMonths(quarterStart(minDate), -3);
   let chartEnd = quarterStart(maxDate); chartEnd = addMonths(chartEnd, 3);
   const quarters = [];
@@ -293,8 +302,8 @@ function ganttSvg(list) {
     parts.push(`<text x="${PAD}" y="${ry + 18}" font-family="${FONT}" font-size="12.5" font-weight="600" fill="${TEXT}">${esc(truncate(r.title, titleFont, LABEL_W - 16))}</text>`);
     if (r.comp) parts.push(`<text x="${PAD}" y="${ry + 33}" font-family="${FONT}" font-size="11" fill="${MUTED}">${esc(truncate(r.comp.name, subFont, LABEL_W - 16))}</text>`);
 
-    // bar: from previous step (or chart start) to target date
-    const startX = X(r.prev || chartStart);
+    // bar: from the resolved start date to the target date
+    const startX = X(r.start);
     const endX = X(r.date);
     const barY = ry + (ROW_H - 16) / 2;
     if (endX - startX >= 10) {
