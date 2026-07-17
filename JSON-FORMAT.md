@@ -337,6 +337,7 @@ When you import a file:
    - **Orphan transitions** — a transition whose `componentId` doesn't match any component is **dropped**; a `fromProductId`/`toProductId` that doesn't match any product is cleared (the transition itself is kept).
    - Missing arrays are created as `[]`. Missing `docConfig`/`meta` fields are defaulted.
    - If `statuses` is empty, the 5 defaults are seeded.
+   - **Unresolvable `product.statusId`** — a product whose `statusId` is blank or doesn't match any status is reassigned to the first status by `order`. The same repair runs on every load, so a strategy already saved with a blank status heals itself.
 
 There is **no automatic cascade the other way**: e.g. deleting a component from the JSON while leaving its `componentProducts` pairs in place just means those pairs get dropped as orphans on import.
 

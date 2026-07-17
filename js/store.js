@@ -121,7 +121,7 @@ function loadFromStorage() {
   if (!parsed || typeof parsed !== "object") {
     state = emptyDataset();
   } else {
-    state = migrate(normalise(parsed));
+    state = healProductStatuses(migrate(normalise(parsed)));
   }
   return state;
 }
@@ -168,11 +168,23 @@ function normalise(d) {
   return d;
 }
 
+// Repair products whose statusId is blank or points at a status that no longer exists,
+// falling back to the first status by order. Blank ids were once written by a save bug;
+// dangling ids can also arrive from hand-edited JSON. Idempotent — safe to run on every load.
+function healProductStatuses(d) {
+  if (!d.statuses.length) return d;
+  const known = new Set(d.statuses.map((s) => s.id));
+  const fallback = [...d.statuses].sort((a, b) => a.order - b.order)[0].id;
+  d.products.forEach((p) => { if (!known.has(p.statusId)) p.statusId = fallback; });
+  return d;
+}
+
 // Replace the whole dataset (template load / import). Adds timestamps & default statuses if missing.
 function replaceDataset(data) {
   const d = normalise(JSON.parse(JSON.stringify(data)));
   d.schemaVersion = SCHEMA_VERSION;
   if (!d.statuses.length) d.statuses = DEFAULT_STATUSES();
+  healProductStatuses(d);
   d.meta.createdAt = d.meta.createdAt || nowISO();
   state = migrate(d);
   persist();

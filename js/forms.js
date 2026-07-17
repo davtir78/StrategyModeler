@@ -194,7 +194,7 @@ function editProduct(prod = null, presetComponentId = null) {
     validate: () => validateName(nameF),
     save: () => {
       const saved = store.upsert("products", {
-        id: prod?.id, name: val(nameF), vendor: val(vendorF), statusId: val(statusSel), notes: val(notesF), icon: iconF.getIcon(),
+        id: prod?.id, name: val(nameF), vendor: val(vendorF), statusId: statusSel.value, notes: val(notesF), icon: iconF.getIcon(),
       });
       store.replaceLinks("componentProducts", "b", saved.id, compList.getSelected());
     },
