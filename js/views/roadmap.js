@@ -7,12 +7,31 @@ window.SM = window.SM || {};
 
 const store = SM.store;
 const { TRANSITION_STATUSES } = SM.store;
-const { h, iconBtn, select } = SM.ui;
+const { h, iconBtn, select, toast } = SM.ui;
 const { applyFocus, hexA } = SM.nav;
 const { editTransition, removeTransition } = SM.forms;
 
 let filterLayerId = "";
 let filterComponentId = "";
+let viewMode = "timeline"; // "timeline" | "gantt"
+
+function filteredList() {
+  return store.transitionsSorted().filter((t) => {
+    if (filterLayerId) {
+      const c = store.byId("components", t.componentId);
+      if (!c || c.layerId !== filterLayerId) return false;
+    }
+    if (filterComponentId && t.componentId !== filterComponentId) return false;
+    return true;
+  });
+}
+
+function exportImage(kind) {
+  const res = SM.svg_render.ganttSvg(filteredList());
+  if (!res) { toast("No dated transitions to export.", { type: "err" }); return; }
+  if (kind === "svg") { SM.svg_render.downloadSvg(res, "roadmap-gantt"); toast("SVG downloaded"); }
+  else SM.svg_render.downloadPng(res, "roadmap-gantt").then(() => toast("PNG downloaded")).catch((e) => toast(e.message, { type: "err" }));
+}
 
 function render(container, { params } = {}) {
   const s = store.getState();
@@ -20,6 +39,9 @@ function render(container, { params } = {}) {
   container.appendChild(h("div.view-header", {},
     h("h1", { text: "Roadmap" }),
     h("div.spacer"),
+    h("button.btn", { text: viewMode === "gantt" ? "☰ Timeline" : "◫ Gantt", onclick: (e) => { viewMode = viewMode === "gantt" ? "timeline" : "gantt"; rerender(container, params); e.currentTarget.blur(); } }),
+    h("button.btn", { text: "⤓ SVG", title: "Download the Gantt as SVG (inserts crisply into Word / PowerPoint)", onclick: () => exportImage("svg") }),
+    h("button.btn", { text: "⤓ PNG", title: "Download the Gantt as PNG image", onclick: () => exportImage("png") }),
     h("button.btn.btn-primary", { text: "+ Add transition", onclick: () => editTransition(null, filterComponentId || null) })
   ));
 
@@ -32,14 +54,7 @@ function render(container, { params } = {}) {
 
   container.appendChild(toolbar(container, params));
 
-  const list = store.transitionsSorted().filter((t) => {
-    if (filterLayerId) {
-      const c = store.byId("components", t.componentId);
-      if (!c || c.layerId !== filterLayerId) return false;
-    }
-    if (filterComponentId && t.componentId !== filterComponentId) return false;
-    return true;
-  });
+  const list = filteredList();
 
   if (!list.length) {
     container.appendChild(h("div.empty-state", {},
@@ -50,7 +65,13 @@ function render(container, { params } = {}) {
     return;
   }
 
-  container.appendChild(buildTimeline(list));
+  if (viewMode === "gantt") {
+    const gantt = SM.svg_render.ganttElement(list);
+    if (gantt) container.appendChild(gantt);
+    else container.appendChild(h("p.muted", { text: "No dated transitions to chart." }));
+  } else {
+    container.appendChild(buildTimeline(list));
+  }
 
   applyFocus(container, params);
 }

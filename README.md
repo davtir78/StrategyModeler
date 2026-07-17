@@ -22,10 +22,14 @@ build step) and the layered component model from the
   as a layered block model with vertical + cross-cutting layers.
 - **Full traceability** — click any chip to jump to the linked user/persona, use case, component or
   product (the target pulses on arrival).
-- **Roadmap** — a chronological timeline of the transitions your strategy makes over time
-  (migrations, decommissions, new platform launches), each with a target date, status, and
-  rationale, filterable by layer/component — the "what are we doing and when" view for stakeholders
-  who don't need the full component/product detail.
+- **Roadmap** — the transitions your strategy makes over time (migrations, decommissions, new
+  platform launches), each with a target date, status, and rationale, filterable by layer/component —
+  the "what are we doing and when" view for stakeholders who don't need the full component/product
+  detail. Switch between a chronological card timeline and a **Gantt chart** (quarter columns,
+  bars chained per component, milestone markers).
+- **SVG / PNG diagram downloads** — one-click export of the Logical/Physical models and the
+  Roadmap Gantt as standalone `.svg` or `.png` files that insert cleanly into Word and PowerPoint
+  (SVG stays crisp at any size; both are drawn natively, not screenshots).
 - **Configurable statuses** — user-defined product lifecycle classifications drive the legend and
   all status chips.
 - **Configuration** — tabbed CRUD for every entity, three mapping matrices, import/export and a

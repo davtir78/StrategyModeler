@@ -488,6 +488,13 @@ a { color: var(--accent); }
 .roadmap-title { font-size: 14px; font-weight: 600; }
 .roadmap-status { flex: none; }
 
+/* inline Gantt (SVG scaled to width) */
+.gantt-host {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  padding: 10px; overflow-x: auto;
+}
+
 /* Flat stack: every layer is a full-width band, ordered by `order`. */
 .model-stack { display: flex; flex-direction: column; gap: 14px; }
 
