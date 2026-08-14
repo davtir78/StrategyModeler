@@ -97,7 +97,7 @@ async function exportPDF(cfg) {
   if (cfg.sections.useCases) await captureSection(ctx, host, "Use Cases", useCasesRenderable());
   if (cfg.sections.logical)  await captureSection(ctx, host, "Logical Design", logicalSectionEl(compact, showDesc));
   if (cfg.sections.physical) await captureSection(ctx, host, "Physical Execution", physicalRenderable(compact, showDesc));
-  if (cfg.sections.roadmap) await captureSection(ctx, host, "Roadmap", roadmapRenderable());
+  if (cfg.sections.roadmap) await captureSection(ctx, host, "Roadmap", roadmapRenderable(cfg.roadmapView));
   if (cfg.dataTables) {
     const ap = document.createElement("div");
     ap.innerHTML = dataTablesHtml().replace(/^<h2>.*?<\/h2>/, "");
@@ -291,13 +291,18 @@ function logicalSectionEl(compact, showDesc) {
   return wrap;
 }
 
-// Roadmap timeline (read-only — no edit/delete controls in the exported document).
-function roadmapRenderable() {
+// Roadmap timeline or Gantt (read-only — no edit/delete controls in the exported document).
+function roadmapRenderable(view) {
   const list = store.transitionsSorted();
   const wrap = document.createElement("div");
   if (!list.length) {
     wrap.innerHTML = `<p class="muted">No transitions yet.</p>`;
     return wrap;
+  }
+  if (view === "gantt") {
+    const gantt = SM.svg_render.ganttElement(list);
+    if (gantt) { wrap.appendChild(gantt); return wrap; }
+    // no dated transitions to chart — fall through to the timeline
   }
   wrap.appendChild(SM.view_roadmap.buildTimeline(list, { editable: false }));
   return wrap;
@@ -390,6 +395,7 @@ h2{font-size:20px;} h3{font-size:15px;color:#2563eb;margin:14px 0 4px;} p{margin
 .roadmap-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
 .roadmap-title{font-size:14px;font-weight:600;}
 .roadmap-status{flex:none;}
+.gantt-host{background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 1px 2px rgba(15,23,42,.06);padding:10px;}
 
 /* data-tables appendix */
 .dt-wrap{overflow-x:auto;}
@@ -397,7 +403,7 @@ h2{font-size:20px;} h3{font-size:15px;color:#2563eb;margin:14px 0 4px;} p{margin
 .dt-table th,.dt-table td{border:1px solid #cbd5e1;padding:5px 8px;text-align:left;vertical-align:top;}
 .dt-table th{background:#eef2f7;font-weight:600;}
 
-@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box,.roadmap-card,.dt-table tr{break-inside:avoid;} }
+@media print{ @page{size:A4 landscape;margin:12mm;} .export-section{break-before:page;} .export-section.export-cover{break-before:auto;} .card,.layer-band,.component-box,.roadmap-card,.gantt-host,.dt-table tr{break-inside:avoid;} }
 `;
 
 function docSection(title, el) {
@@ -438,7 +444,7 @@ function buildDocumentDom(cfg) {
   if (cfg.sections.useCases) root.appendChild(docSection("Use Cases", useCasesRenderable()));
   if (cfg.sections.logical)  root.appendChild(docSection("Logical Design", logicalSectionEl(false, showDesc)));
   if (cfg.sections.physical) root.appendChild(docSection("Physical Execution", physicalRenderable(false, showDesc)));
-  if (cfg.sections.roadmap) root.appendChild(docSection("Roadmap", roadmapRenderable()));
+  if (cfg.sections.roadmap) root.appendChild(docSection("Roadmap", roadmapRenderable(cfg.roadmapView)));
   if (cfg.dataTables) {
     const ap = document.createElement("div");
     ap.className = "export-section";

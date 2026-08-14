@@ -90,8 +90,9 @@ produce. Entirely optional — omit it and the defaults below are used.
   "compactModel": true,           // render the layered model in compact ("Fit") mode
   "footer": true,                 // footer with strategy title + page numbers (PDF)
   "dataTables": false,            // append a raw data-tables reference appendix (all entities)
-  "showDescriptions": true        // append "Component descriptions" / "Product usage notes"
+  "showDescriptions": true,       // append "Component descriptions" / "Product usage notes"
                                    // reference tables directly under the Logical / Physical diagrams
+  "roadmapView": "timeline"       // "timeline" | "gantt" — HTML/PDF only; Word always uses the timeline
 }
 ```
 
@@ -104,7 +105,8 @@ produce. Entirely optional — omit it and the defaults below are used.
 | `sections.useCases` | boolean | `true` | |
 | `sections.logical` | boolean | `true` | |
 | `sections.physical` | boolean | `true` | |
-| `sections.roadmap` | boolean | `true` | Includes the Roadmap timeline (§10 `transitions`), sorted by `targetDate`. |
+| `sections.roadmap` | boolean | `true` | Includes the Roadmap (§10 `transitions`), sorted by `targetDate`. |
+| `roadmapView` | string | `"timeline"` | `"timeline"`, `"gantt"`. Which layout the Roadmap section uses in the **HTML and PDF** exports. The **Word** export always uses the card timeline — Word's HTML engine can't render the Gantt's proportional SVG bars. |
 | `orientation` | string | `"landscape"` | `"landscape"`, `"portrait"` |
 | `compactModel` | boolean | `true` | |
 | `footer` | boolean | `true` | |

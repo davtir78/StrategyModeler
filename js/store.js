@@ -70,6 +70,7 @@ function defaultDocConfig() {
     coverSubtitle: "",           // blank = fall back to meta.organisation
     methodology: true,
     sections: { users: true, useCases: true, logical: true, physical: true, roadmap: true },
+    roadmapView: "timeline",     // "timeline" | "gantt" — only affects HTML/PDF; Word always uses the card timeline (no proportional bars in Word HTML)
     orientation: "landscape",    // "landscape" | "portrait"
     compactModel: true,          // render the layered model in compact ("Fit") mode
     footer: true,                // footer with strategy title + page numbers

@@ -6,7 +6,7 @@ window.SM = window.SM || {};
 // ============================================================
 
 const store = SM.store;
-const { h, toast, openModal } = SM.ui;
+const { h, toast, openModal, select } = SM.ui;
 const { go } = SM.nav;
 const { exportPDF, exportWord, exportHtml, buildDocumentDom } = SM.exportMod;
 function render(container) {
@@ -63,7 +63,13 @@ function render(container) {
   sectionCard.appendChild(sectionToggle("useCases", cfg.sections.useCases, "Use Cases", "Use-case cards", counts.useCases, (v) => store.updateDocConfig({ sections: { useCases: v } })));
   sectionCard.appendChild(sectionToggle("logical", cfg.sections.logical, "Logical Design", "The layered component model", counts.components, (v) => store.updateDocConfig({ sections: { logical: v } })));
   sectionCard.appendChild(sectionToggle("physical", cfg.sections.physical, "Physical Execution", "Model with mapped products + status legend", counts.products, (v) => store.updateDocConfig({ sections: { physical: v } })));
-  sectionCard.appendChild(sectionToggle("roadmap", cfg.sections.roadmap, "Roadmap", "Chronological timeline of transitions", counts.transitions, (v) => store.updateDocConfig({ sections: { roadmap: v } })));
+  const roadmapViewSel = select(
+    [{ value: "timeline", label: "Card timeline" }, { value: "gantt", label: "Gantt chart" }],
+    cfg.roadmapView || "timeline",
+    { style: { marginTop: "6px" }, onclick: (e) => e.stopPropagation() }
+  );
+  roadmapViewSel.addEventListener("change", () => store.updateDocConfig({ roadmapView: roadmapViewSel.value }));
+  sectionCard.appendChild(sectionToggle("roadmap", cfg.sections.roadmap, "Roadmap", "Timeline or Gantt of transitions. Word always uses the card timeline (no proportional bars in Word HTML).", counts.transitions, (v) => store.updateDocConfig({ sections: { roadmap: v } }), roadmapViewSel));
   sectionCard.appendChild(sectionToggle("showDescriptions", cfg.showDescriptions, "Descriptions & usage notes", "Reference tables placed under the Logical & Physical diagrams: component descriptions, and product usage notes (e.g. “MuleSoft — Contain, only use with Salesforce”)", null, (v) => store.updateDocConfig({ showDescriptions: v })));
   sectionCard.appendChild(sectionToggle("dataTables", cfg.dataTables, "Data tables (appendix)", "Raw reference tables of every entity at the end", null, (v) => store.updateDocConfig({ dataTables: v })));
   container.appendChild(sectionCard);
@@ -159,14 +165,15 @@ function checkboxRow(key, checked, label, onChange) {
   return h("label.toggle-inline", { style: { display: "flex", margin: "8px 0", color: "var(--text)", fontSize: "14px" } }, cb, label);
 }
 
-function sectionToggle(key, checked, title, desc, count, onChange) {
+function sectionToggle(key, checked, title, desc, count, onChange, extra) {
   const cb = h("input", { type: "checkbox", checked });
   cb.addEventListener("change", () => onChange(cb.checked));
   return h("label.doc-section-row", {},
     cb,
     h("div", {},
       h("div", {}, h("b", { text: title }), count != null ? h("span.muted", { text: `  (${count})` }) : null),
-      h("div.muted", { text: desc, style: { fontSize: "12.5px" } })
+      h("div.muted", { text: desc, style: { fontSize: "12.5px" } }),
+      extra || null
     )
   );
 }
