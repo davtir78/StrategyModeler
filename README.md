@@ -32,6 +32,9 @@ build step) and the layered component model from the
 - **SVG / PNG diagram downloads** — one-click export of the Logical/Physical models and the
   Roadmap Gantt as standalone `.svg` or `.png` files that insert cleanly into Word and PowerPoint
   (SVG stays crisp at any size; both are drawn natively, not screenshots).
+- **Duplicate** — clone a layer, component, or product from Configuration (⧉); components and
+  products copy their existing mappings too, and Edit opens on the copy immediately so renaming
+  past "(copy)" is one click away.
 - **Configurable statuses** — user-defined product lifecycle classifications drive the legend and
   all status chips.
 - **Configuration** — tabbed CRUD for every entity, three mapping matrices, import/export and a

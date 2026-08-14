@@ -381,6 +381,49 @@ function deleteLayer(id) {
   return true;
 }
 
+// ------------------------------------------------------------
+// Duplicate — clone an entity (new id, "<name> (copy)") including its
+// mappings, so the copy starts out identical and the user tweaks from there.
+// ------------------------------------------------------------
+
+function duplicateComponent(id) {
+  const orig = byId("components", id);
+  if (!orig) return null;
+  const copy = { ...orig, id: uid(), name: orig.name + " (copy)" };
+  state.components.push(copy);
+  state.mappings.useCaseComponents
+    .filter((m) => m.componentId === id)
+    .forEach((m) => state.mappings.useCaseComponents.push({ useCaseId: m.useCaseId, componentId: copy.id }));
+  state.mappings.componentProducts
+    .filter((m) => m.componentId === id)
+    .forEach((m) => state.mappings.componentProducts.push({ componentId: copy.id, productId: m.productId }));
+  persist();
+  return copy;
+}
+
+function duplicateProduct(id) {
+  const orig = byId("products", id);
+  if (!orig) return null;
+  const copy = { ...orig, id: uid(), name: orig.name + " (copy)" };
+  state.products.push(copy);
+  state.mappings.componentProducts
+    .filter((m) => m.productId === id)
+    .forEach((m) => state.mappings.componentProducts.push({ componentId: m.componentId, productId: copy.id }));
+  persist();
+  return copy;
+}
+
+// Clones layer metadata only (name/colour/orientation/description) — not its components,
+// which the caller's confirmation copy should make clear.
+function duplicateLayer(id) {
+  const orig = byId("layers", id);
+  if (!orig) return null;
+  const copy = { ...orig, id: uid(), name: orig.name + " (copy)", order: nextOrder("layers") };
+  state.layers.push(copy);
+  persist();
+  return copy;
+}
+
 // Status delete: blocked while any product uses it; last status can never be deleted.
 function productsUsingStatus(id) { return state.products.filter((p) => p.statusId === id); }
 function canDeleteStatus(id) {
@@ -463,5 +506,5 @@ function importDataset(data) {
 }
 
 
-SM.store = { subscribe, getState, defaultDocConfig, emptyDataset, blankDataset, isEmptyDataset, loadFromStorage, replaceDataset, startBlank, clearAll, updateMeta, updateDocConfig, getDocConfig, statusesSorted, layersSorted, componentsForLayer, transitionsSorted, transitionsForComponent, upsert, setMapping, hasMapping, replaceLinks, linkedIds, deleteUser, deleteUseCase, deleteComponent, deleteProduct, deleteTransition, canDeleteLayer, deleteLayer, productsUsingStatus, canDeleteStatus, deleteStatusReassign, reorder, nextOrder, validateDataset, importDataset, SCHEMA_VERSION, LAYER_COLORS, LAYER_COLOR_NAMES, DEFAULT_STATUSES, TRANSITION_STATUSES, byId, statusById, layerById, useCasesOfUser, usersOfUseCase, componentsOfUseCase, useCasesOfComponent, productsOfComponent, componentsOfProduct };
+SM.store = { subscribe, getState, defaultDocConfig, emptyDataset, blankDataset, isEmptyDataset, loadFromStorage, replaceDataset, startBlank, clearAll, updateMeta, updateDocConfig, getDocConfig, statusesSorted, layersSorted, componentsForLayer, transitionsSorted, transitionsForComponent, upsert, setMapping, hasMapping, replaceLinks, linkedIds, deleteUser, deleteUseCase, deleteComponent, deleteProduct, deleteTransition, canDeleteLayer, deleteLayer, duplicateComponent, duplicateProduct, duplicateLayer, productsUsingStatus, canDeleteStatus, deleteStatusReassign, reorder, nextOrder, validateDataset, importDataset, SCHEMA_VERSION, LAYER_COLORS, LAYER_COLOR_NAMES, DEFAULT_STATUSES, TRANSITION_STATUSES, byId, statusById, layerById, useCasesOfUser, usersOfUseCase, componentsOfUseCase, useCasesOfComponent, productsOfComponent, componentsOfProduct };
 })();

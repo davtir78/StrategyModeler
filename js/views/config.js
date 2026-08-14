@@ -92,7 +92,7 @@ function tabLayers(panel) {
     h("td", {}, colorTag(l.color)),
     h("td", { text: l.orientation }),
     h("td", { text: String(store.componentsForLayer(l.id).length) }),
-    actionsCell(() => editLayer(l), () => removeLayer(l))
+    actionsCell(() => editLayer(l), () => removeLayer(l), () => duplicateLayer(l))
   ));
   entityTable({ panel, title: "Layers", addLabel: "+ Add layer", onAdd: () => editLayer(),
     columns: [{ head: "Order" }, { head: "Name" }, { head: "Colour" }, { head: "Orientation" }, { head: "Components" }], rows });
@@ -108,7 +108,7 @@ function tabComponents(panel) {
       h("td", { text: layerName(c.layerId) }),
       h("td", { text: c.row == null ? "—" : String(c.row) }),
       h("td", { text: String(store.productsOfComponent(c.id).length) }),
-      actionsCell(() => editComponent(c), () => removeComponent(c))
+      actionsCell(() => editComponent(c), () => removeComponent(c), () => duplicateComponent(c))
     ));
   entityTable({ panel, title: "Components", addLabel: "+ Add component", onAdd: () => editComponent(),
     columns: [{ head: "Name" }, { head: "Layer" }, { head: "Row" }, { head: "Products" }], rows });
@@ -123,7 +123,7 @@ function tabProducts(panel) {
       h("td", { text: p.vendor || "—" }),
       h("td", {}, st ? statusDot(st) : "—"),
       h("td", { text: String(store.componentsOfProduct(p.id).length) }),
-      actionsCell(() => editProduct(p), () => removeProduct(p))
+      actionsCell(() => editProduct(p), () => removeProduct(p), () => duplicateProduct(p))
     );
   });
   entityTable({ panel, title: "Products", addLabel: "+ Add product", onAdd: () => editProduct(),
@@ -289,8 +289,17 @@ function clearAllFlow() {
 }
 
 // ---------- shared cell helpers ----------
-function actionsCell(onEdit, onDelete) {
-  return h("td", {}, h("div.row-actions", {}, iconBtn("✎", "Edit", onEdit), iconBtn("🗑", "Delete", onDelete, "danger")));
+// Duplicate then immediately open Edit on the copy, so renaming past "(copy)" is one click away.
+function duplicateComponent(c) { const copy = store.duplicateComponent(c.id); if (copy) { toast("Component duplicated"); editComponent(copy); } }
+function duplicateProduct(p) { const copy = store.duplicateProduct(p.id); if (copy) { toast("Product duplicated"); editProduct(copy); } }
+function duplicateLayer(l) { const copy = store.duplicateLayer(l.id); if (copy) { toast("Layer duplicated (components not copied)"); editLayer(copy); } }
+
+function actionsCell(onEdit, onDelete, onDuplicate) {
+  return h("td", {}, h("div.row-actions", {},
+    iconBtn("✎", "Edit", onEdit),
+    onDuplicate ? iconBtn("⧉", "Duplicate", onDuplicate) : null,
+    iconBtn("🗑", "Delete", onDelete, "danger")
+  ));
 }
 function reorderBtns(coll, id, i, total) {
   return h("span", { style: { marginRight: "6px" } },
