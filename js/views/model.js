@@ -12,10 +12,13 @@ const { chip, chipRow, hexA, go } = SM.nav;
 const { editComponent, editProduct } = SM.forms;
 const { renderIcon } = SM.icons;
 // Build the full model element. mode = "logical" | "physical".
-// opts: { compact }
+// opts: { compact, query } — query is a raw search string; components (and, in physical
+// mode, their mapped products) not matching are filtered out, and layers left with no
+// matches are hidden entirely rather than shown empty.
 function buildModel(mode, opts = {}) {
   const model = h("div.model" + (opts.compact ? ".compact" : ""));
   const layers = store.layersSorted();
+  const query = (opts.query || "").trim().toLowerCase();
 
   if (!layers.length) {
     model.appendChild(h("div.empty-state", {},
@@ -26,13 +29,42 @@ function buildModel(mode, opts = {}) {
 
   // Flat layout: every layer is a full-width band, stacked by ascending `order`.
   const stack = h("div.model-stack");
-  layers.forEach((l) => stack.appendChild(band(l, mode)));
+  let anyBand = false;
+  layers.forEach((l) => {
+    const el = band(l, mode, query);
+    if (el) { stack.appendChild(el); anyBand = true; }
+  });
+
+  if (!anyBand && query) {
+    model.appendChild(h("div.empty-state", {},
+      h("div.big", { text: "No matches." }),
+      h("div.muted", { text: `Nothing found for "${opts.query.trim()}".` })));
+    return model;
+  }
+
   model.appendChild(stack);
   return model;
 }
 
-function band(layer, mode) {
+function matchesQuery(cp, mode, query) {
+  if (!query) return true;
+  if (cp.name.toLowerCase().includes(query)) return true;
+  if ((cp.description || "").toLowerCase().includes(query)) return true;
+  if (mode === "physical") {
+    return store.productsOfComponent(cp.id)
+      .map((id) => store.byId("products", id))
+      .some((p) => p && p.name.toLowerCase().includes(query));
+  }
+  return false;
+}
+
+// Returns null (skip this layer entirely) when a query is active and nothing in it matches.
+function band(layer, mode, query) {
   const c = LAYER_COLORS[layer.color] || LAYER_COLORS.slate;
+  const allComps = store.componentsForLayer(layer.id);
+  const comps = query ? allComps.filter((cp) => matchesQuery(cp, mode, query)) : allComps;
+  if (query && !comps.length) return null;
+
   const el = h("div.layer-band", {
     style: { background: `linear-gradient(180deg, ${c.bg} 0%, #ffffff 160%)`, borderColor: c.border },
     dataset: { focusLayer: layer.id },
@@ -42,7 +74,6 @@ function band(layer, mode) {
     layer.orientation === "cross-cutting" ? h("span.layer-span-note", { text: "· spans all layers" }) : null
   ));
 
-  const comps = store.componentsForLayer(layer.id);
   if (!comps.length) {
     el.appendChild(h("div.layer-empty-hint", { text: "No components yet." }));
     return el;

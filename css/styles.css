@@ -162,6 +162,11 @@ a { color: var(--accent); }
 }
 .view-header h1 { font-size: 22px; font-weight: 600; margin: 0; flex: 1; }
 .view-header .spacer { flex: 1; }
+.search-input {
+  padding: 7px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface); font-size: 14px; width: 220px;
+}
+.search-input:focus { outline: none; border-color: var(--accent); }
 
 /* ---------- Buttons ---------- */
 

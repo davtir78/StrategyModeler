@@ -9,6 +9,7 @@ const { h, toast } = SM.ui;
 const { applyFocus } = SM.nav;
 const { buildModel, applyFit } = SM.view_model;
 let compact = false;
+let query = "";
 
 function exportImage(kind) {
   const res = SM.svg_render.modelSvg("logical");
@@ -18,8 +19,12 @@ function exportImage(kind) {
 }
 
 function render(container, { params } = {}) {
+  const searchInput = h("input.search-input", { type: "search", placeholder: "Search components…", value: query });
+  searchInput.addEventListener("input", () => { query = searchInput.value; rebuild(container, params); });
+
   container.appendChild(h("div.view-header", {},
-    h("h1", { text: "Logical Design" }),
+    h("h1", { text: "Logical Design", style: { flex: "0 0 auto" } }),
+    searchInput,
     h("div.spacer"),
     h("button.btn", { text: "⤓ SVG", title: "Download as SVG (inserts crisply into Word / PowerPoint)", onclick: () => exportImage("svg") }),
     h("button.btn", { text: "⤓ PNG", title: "Download as PNG image", onclick: () => exportImage("png") }),
@@ -27,7 +32,7 @@ function render(container, { params } = {}) {
   ));
   const host = h("div", { id: "model-host" });
   container.appendChild(host);
-  host.appendChild(buildModel("logical", { compact }));
+  host.appendChild(buildModel("logical", { compact, query }));
   applyFit(container, host, compact);
   applyFocus(container, params);
 }
@@ -37,7 +42,7 @@ function rebuild(container, params) {
   const btn = container.querySelector(".view-header .fit-btn");
   if (btn) btn.textContent = compact ? "⤢ Expand" : "⤢ Fit";
   host.innerHTML = "";
-  host.appendChild(buildModel("logical", { compact }));
+  host.appendChild(buildModel("logical", { compact, query }));
   applyFit(container, host, compact);
   applyFocus(container, params);
 }
