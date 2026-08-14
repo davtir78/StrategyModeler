@@ -137,6 +137,19 @@ function persist() {
   emit();
 }
 
+// Cross-tab sync: the "storage" event fires in every OTHER tab/window sharing this origin
+// whenever one of them writes STORAGE_KEY (never in the tab that made the write), so this
+// can't loop back on our own persist() above. Re-adopt whatever the other tab just saved and
+// re-render, so two open tabs on the same strategy don't silently diverge and clobber each other.
+window.addEventListener("storage", (e) => {
+  if (e.key !== STORAGE_KEY) return;
+  let parsed = null;
+  try { parsed = e.newValue ? JSON.parse(e.newValue) : null; }
+  catch (err) { console.warn("Cross-tab sync: failed to parse updated dataset.", err); return; }
+  state = (!parsed || typeof parsed !== "object") ? emptyDataset() : healProductStatuses(migrate(normalise(parsed)));
+  emit();
+});
+
 // Migration hook (v1 has none; the mechanism exists for future versions).
 function migrate(d) {
   if (!d.schemaVersion || d.schemaVersion < SCHEMA_VERSION) {
