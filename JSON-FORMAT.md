@@ -215,6 +215,7 @@ Each layer is a horizontal band in the Logical & Physical views. Rendered **flat
 | `order` | number | **yes** | Positive integer. Bands are sorted ascending. Duplicate orders are allowed but order between them is unspecified. |
 | `orientation` | string | **yes** | `"vertical"` or `"cross-cutting"`. Cross-cutting bands get a small "· spans all layers" note; layout is otherwise identical (flat). |
 | `description` | string | optional | Shown as a tooltip on the band header. |
+| `sourceId` | string | optional | Id of the reference-architecture layer this band was generated from (see §16). Omit for layers you create yourself. |
 
 ---
 
@@ -241,6 +242,7 @@ A component is a box inside a layer band.
 | `description` | string | optional | Shown in the click-through side panel. |
 | `layerId` | string | **yes** | Must equal an existing `layers[].id`. A component whose layer doesn't exist won't render. |
 | `row` | number | optional | Positive integer. Components sharing a `row` sit on the same horizontal row within the band. Components **without** `row` flow after the highest-numbered row. Omit to let it flow. |
+| `sourceId` | string | optional | Id of the reference-architecture component this one was generated from (see §16). Omit for components you create yourself. Duplicating a component does **not** copy it. |
 
 ---
 
@@ -453,3 +455,42 @@ Before importing, confirm:
 - [ ] Every `transition.componentId` matches a real `components[].id`; `targetDate` is `YYYY-MM-DD`; `status` is one of `not-started` / `planned` / `in-progress` / `done`.
 
 A handy prompt for an LLM: *"Here is the Strategy Modeler JSON schema (paste this file). Adjust the following dataset to incorporate <your info>, keeping every id unique and every referenced id valid, using only the allowed enum values for `type`, `orientation`, layer `color` names, and `icon` names. Return the full JSON object."*
+
+---
+
+## 16. Templates and provenance
+
+Bundled templates (`templates/*.js`) wrap a dataset with a little metadata, and self-register on
+`window.STRATEGY_TEMPLATES` so they load under `file://`:
+
+```js
+window.STRATEGY_TEMPLATES.push({
+  id: "integration",
+  name: "Integration Strategy (example)",
+  description: "…",
+  source: "Integration Reference Architecture",          // shown on the template card
+  sourceUrl: "https://itarchitecturepatterns.net/…",     // linked from the card
+  sourceArchitecture: "integration-refence-architecture", // id of the reference architecture it follows
+  lastSynced: "2026-09-17",                               // set by the sync; shown as "Synced …"
+  data: { schemaVersion: 1, /* the dataset described above */ }
+});
+```
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `source`, `sourceUrl` | string | optional | Human-readable origin, shown on the template card. |
+| `sourceArchitecture` | string | optional | Identifier of the IT Architecture Patterns reference architecture the layers and components follow. |
+| `lastSynced` | string | optional | `YYYY-MM-DD` of the last sync. Absent on hand-written templates. |
+
+### How sync uses `sourceId`
+
+Templates that follow a reference architecture are kept current by a sync script in the
+[itarchitecturepatterns](https://github.com/davtir78/itarchitecturepatterns) repo
+(`scripts/sync-strategy-templates.ts`). It regenerates `layers` and `components` from the reference
+architecture, matching existing entries **by `sourceId`, never by name**, so a renamed component keeps
+its id and every mapping that points at it. Everything else in the template — `users`, `useCases`,
+`products`, `statuses`, `transitions`, `meta` and `docConfig` — is hand-written and carried through
+untouched. Layers and components **without** a `sourceId` are treated as local additions and left alone.
+
+`sourceId` has no effect inside the app: it survives load, save, import and export, and is ignored
+otherwise. Saved strategies are never synced — only the bundled templates are.

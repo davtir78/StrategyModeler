@@ -233,7 +233,9 @@ function templateGallery(templates, onLoad) {
           href: t.sourceUrl, target: "_blank", rel: "noopener noreferrer",
           text: (t.source || "Reference architecture") + " ↗",
           onclick: (e) => e.stopPropagation(),
-        }) : null
+        }) : null,
+        // Set by the template sync; templates written by hand have no sync date.
+        t.lastSynced ? h("div.muted.tc-synced", { text: "Synced " + t.lastSynced }) : null
       ),
       h("button.btn.btn-sm", { text: "Load", onclick: () => onLoad(t.id) })
     )

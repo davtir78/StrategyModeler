@@ -389,7 +389,9 @@ function deleteLayer(id) {
 function duplicateComponent(id) {
   const orig = byId("components", id);
   if (!orig) return null;
-  const copy = { ...orig, id: uid(), name: orig.name + " (copy)" };
+  // A copy is the user's own component, not the reference-architecture one: don't inherit its sourceId.
+  const { sourceId: _sourceId, ...rest } = orig;
+  const copy = { ...rest, id: uid(), name: orig.name + " (copy)" };
   state.components.push(copy);
   state.mappings.useCaseComponents
     .filter((m) => m.componentId === id)
@@ -418,7 +420,8 @@ function duplicateProduct(id) {
 function duplicateLayer(id) {
   const orig = byId("layers", id);
   if (!orig) return null;
-  const copy = { ...orig, id: uid(), name: orig.name + " (copy)", order: nextOrder("layers") };
+  const { sourceId: _sourceId, ...rest } = orig;
+  const copy = { ...rest, id: uid(), name: orig.name + " (copy)", order: nextOrder("layers") };
   state.layers.push(copy);
   persist();
   return copy;

@@ -146,26 +146,24 @@ Every push to `main` triggers an automatic rebuild (~1–2 minutes). No config f
 GitHub's own Pages settings (Settings → Pages → Source: `main` / `/ (root)`); the app's relative
 paths and hash-based routing (`#/home`) work fine served from a subpath.
 
-## Deploy to Firebase Hosting
+## Also served on IT Architecture Patterns
 
-Alternative host with its own free tier and a root-domain URL. Hosting config lives in
-`firebase.json` / `.firebaserc` (project alias `strategymodeler` — update it if your Firebase
-project ID differs):
+The app is also published at **[itarchitecturepatterns.net/tools/strategy-modeler](https://itarchitecturepatterns.net/tools/strategy-modeler)**.
+That site includes this repo as a git submodule and copies the runtime files (`index.html`, `css/`,
+`js/`, `templates/`) into its build, so it updates only when its submodule pointer is moved — a push
+here changes GitHub Pages immediately but the site deliberately. Nothing in this repo needs to change
+for that to work; keep asset paths relative and routing hash-based.
 
-```bash
-npm install -g firebase-tools     # once
-firebase login
-firebase use --add                # pick your StrategyModeler project if the alias is wrong
-firebase deploy --only hosting
-```
+(The earlier Firebase Hosting deployment at `strategymodeler.web.app` has been retired.)
 
 ## Credits
 
 The layered component models in the example strategies are based on the reference architectures
 published at **[IT Architecture Patterns](https://www.itarchitecturepatterns.net/reference-architectures)**.
-The bundled *Data Platform Strategy* example follows their
-[Data Platform Reference Architecture](https://www.itarchitecturepatterns.net/reference-architectures/data-platform-reference-architecture);
-the *Integration Strategy* example is authored in the same modelling style. Well worth a visit for
+The bundled *Data Platform Strategy* and *Integration Strategy* examples follow their
+[Data Platform](https://www.itarchitecturepatterns.net/reference-architectures/data-platform-reference-architecture)
+and [Integration](https://www.itarchitecturepatterns.net/reference-architectures/integration-refence-architecture)
+reference architectures, and are kept in step with them by a sync (see `JSON-FORMAT.md` §16). Well worth a visit for
 more reference architectures.
 
 ## License
