@@ -154,6 +154,21 @@ That site includes this repo as a git submodule and copies the runtime files (`i
 here changes GitHub Pages immediately but the site deliberately. Nothing in this repo needs to change
 for that to work; keep asset paths relative and routing hash-based.
 
+## Hosting the modeler inside another site
+
+A site that serves the modeler as one of its tools can give visitors a way back to it. Add these
+tags to the `<head>` of the copied `index.html`, and the modeler draws a host bar across the top,
+styled as the host's chrome so its "← Site" can't be confused with the modeler's own Home:
+
+```html
+<meta name="tool-host-name" content="Your Site">                          <!-- required -->
+<meta name="tool-host-href" content="/">                                   <!-- required: the site's home -->
+<meta name="tool-host-link" content="Related page|/path/to/page">          <!-- optional, repeatable -->
+```
+
+Without the tags there is no bar, which is how the modeler stays domain-neutral on GitHub Pages
+and from `file://`. IT Architecture Patterns adds them in its build (`scripts/copy-tools.mjs`).
+
 (The earlier Firebase Hosting deployment at `strategymodeler.web.app` has been retired.)
 
 ## Credits

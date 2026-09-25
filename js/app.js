@@ -42,6 +42,39 @@ const NAV = [
 let mainEl = null;
 let titleEl = null;
 
+// Host bar. When a site serves the modeler as one of its tools, it names itself in "tool-host"
+// meta tags, and the modeler draws a way back to that site across the top. The bar is styled as
+// the host's, not the modeler's, so the site's home and the modeler's own Home can't be confused.
+// Served on its own (GitHub Pages, file://) there are no tags and no bar: the modeler stays
+// domain-neutral. Tags:
+//   <meta name="tool-host-name" content="Site name">          required
+//   <meta name="tool-host-href" content="/">                   required: the site's home
+//   <meta name="tool-host-link" content="Label|/path">         optional, repeatable
+function readHost() {
+  const meta = (name) => (document.querySelector(`meta[name="${name}"]`)?.getAttribute("content") || "").trim();
+  const name = meta("tool-host-name"), href = meta("tool-host-href");
+  if (!name || !href) return null;
+  const links = [...document.querySelectorAll('meta[name="tool-host-link"]')]
+    .map((m) => (m.getAttribute("content") || "").split("|").map((s) => s.trim()))
+    .filter(([label, url]) => label && url)
+    .map(([label, url]) => ({ label, href: url }));
+  return { name, href, links };
+}
+
+function renderHostBar(host) {
+  return h("nav.host-bar", { "aria-label": host.name },
+    h("a.host-home", { href: host.href },
+      h("span", { "aria-hidden": "true", text: "← " }),
+      host.name
+    ),
+    h("span.host-sep", { "aria-hidden": "true", text: "/" }),
+    h("span.host-current", { text: "Strategy Modeler" }),
+    host.links.length
+      ? h("span.host-links", {}, ...host.links.map((l) => h("a.host-link", { href: l.href, text: l.label })))
+      : null
+  );
+}
+
 function renderShell() {
   const app = document.getElementById("app");
   clear(app);
@@ -75,7 +108,10 @@ function renderShell() {
 
   mainEl = h("main.app-main");
 
-  app.appendChild(h("div.app-shell", {}, brand, header, nav, mainEl));
+  const host = readHost();
+  app.appendChild(host
+    ? h("div.app-shell.has-host-bar", {}, renderHostBar(host), brand, header, nav, mainEl)
+    : h("div.app-shell", {}, brand, header, nav, mainEl));
   syncTitle();
 }
 
